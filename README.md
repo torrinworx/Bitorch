@@ -24,11 +24,15 @@ Crucial for distributing models, seeders should be incentives to distribute for 
 Crucial for the actual usage of the network, hardware needs to run the models, and users want the end product of the models, be that strings, audio, video, or images, or any other content.
 
 ## 3. Monero-like Blockchain/Distributed Ledger System:
-- **Function**: Manages and tracks the distribution of funds and rewards in a secure, private manner.
-- **Modification for Efficiency**: Instead of Proof of Work (PoW), which is computationally intensive, a more lightweight consensus mechanism would be ideal. Alternatives include Proof of Stake (PoS) or Delegated Proof of Stake (DPoS), which are less resource-intensive.
-- **Implementation Challenge**: Modifying or developing a blockchain system that maintains the privacy and security features of Monero while being efficient enough not to detract from the AI model's computational needs.
+- **Function**: This system is designed to manage and track the distribution of funds and rewards in a manner that is both secure and private. Our focus is on real utility, not hype.
+- **Practical Blockchain Use**: Unlike many crypto projects filled with speculative and profit-driven motives, our blockchain implementation is strictly practical. It's all about fair compensation and transparency in transactions, not about creating another speculative asset.
+- **Efficiency Over Speculation**: We're choosing a consensus mechanism that is lightweight and efficient. This means moving away from Proof of Work (PoW), which is computationally heavy, towards more sustainable alternatives like Proof of Stake (PoS) or Delegated Proof of Stake (DPoS). These are less resource-intensive and more suited to our goal of maintaining a functional, efficient system.
+- **Implementation Challenge**: The challenge lies in adapting or developing a blockchain system that preserves the privacy and security strengths of Monero, while ensuring it doesn’t hinder the computational performance needed for AI model execution. We're committed to making this technology work for the project's goals, not the other way around.
+- **Purpose-Driven Design**: It's crucial for us to facilitate a value exchange system that’s devoid of the typical 'crypto craze'. Users and nodes contributing hardware to the network need a reliable way to transact, ensuring fair compensation and verification of model outputs, without falling into the pitfalls of the speculative crypto world.
 
-Crucial for users and nodes on the network contributing hardware need to be able to exchange value, users need to pay the nodes that are involved in this system, and a system needs to be in place to veryify that the nodes are producing the output of the models.
+Our approach is grounded in creating a blockchain system that serves the project’s needs: efficient, fair, and practical. We are committed to steering clear of the profit-seeking and often unsustainable practices seen in much of the cryptocurrency space.
+
+Crucial for users and nodes on the network contributing hardware need to be able to exchange value, users need to pay the nodes that are involved in this system, and a system needs to be in place to veryify that the nodes are producing the output of the models the users pay for.
 
 ## 4. Security System:
 - **Function**: The security system incorporates dedicated nodes (Security Nodes) tasked with verifying the safety and integrity of models being distributed across the network. These nodes are essential for maintaining the trustworthiness and reliability of the distributed AI models.
