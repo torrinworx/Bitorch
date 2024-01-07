@@ -5,6 +5,7 @@
 # NOTE: make it so that each function in the startup tasks can be run scheduled, or 
 # called by a function elsewhere in the codebase.
 
+import httpx
 import asyncio
 from utils.utils import Utils
 
@@ -22,8 +23,24 @@ class PexTasks:
     
     @staticmethod
     async def request_register():
-        # Implement the logic to request to be registered on a peer
-        pass
+        config = Utils.load_config()
+        source_nodes = config.get('source_nodes', {})
+        
+        # Assuming the current node's address is available as a local variable or from config
+        current_node_address = Utils.get_ip_address()
+
+        # Register with each source node
+        for node, address in source_nodes.items():
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(f"http://{address}/register", json={"address": current_node_address})
+                    
+                    if response.status_code == 200:
+                        print(f"Registered with {node} successfully.")
+                    else:
+                        print(f"Failed to register with {node}: {response.text}")
+            except Exception as e:
+                print(f"Error registering with {node}: {e}")
 
     @staticmethod
     async def update_peer_list():

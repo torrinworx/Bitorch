@@ -11,7 +11,7 @@ from main import app
 
 class ServerManager:
     def __init__(self):
-        self.env = os.environ.get("ENV", "development")
+        self.env = os.environ.get("ENV", "development").lower()
         self.default_port = int(os.getenv("DEFAULT_PORT", 8000))
         self.backend_url = os.getenv("BACKEND_URL")
         self.exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
