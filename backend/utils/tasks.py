@@ -6,6 +6,7 @@
 # called by a function elsewhere in the codebase.
 
 import asyncio
+from utils.utils import Utils
 
 class StartupTasks:
     @staticmethod

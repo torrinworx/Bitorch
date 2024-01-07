@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import socket
 import configparser
 from urllib.parse import urlparse
@@ -27,10 +26,21 @@ class ServerManager:
                 port += 1
 
     def write_port_to_config(self, port):
-        config_data = {"backend_port": port}
-        config_path = os.path.join(self.exe_dir, '.config')
-        with open(config_path, 'w') as file:
-            json.dump(config_data, file)
+        config_file = os.path.join(self.exe_dir, '../', '.config')
+        # Create a config parser object
+        config = configparser.ConfigParser()
+
+        # Read the existing config file
+        config.read(config_file)
+
+        # Add or update the backend port
+        if 'backend' not in config:
+            config['backend'] = {}
+        config['backend']['port'] = str(port)
+
+        # Write the updated configuration back to the file
+        with open(config_file, 'w') as file:
+            config.write(file)
 
     def _environment_check(self):
         if self.env == "production":
