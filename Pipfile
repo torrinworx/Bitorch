@@ -10,6 +10,10 @@ requests = "*"
 python-dotenv = "*"
 libtorrent = "*"
 motor = "*"
+httpx = "*"
+schedule = "*"
+rocketry = "*"
+pydantic = "==1.10.13"
 
 [dev-packages]
 
