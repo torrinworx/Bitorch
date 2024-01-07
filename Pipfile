@@ -9,6 +9,7 @@ uvicorn = "*"
 requests = "*"
 python-dotenv = "*"
 libtorrent = "*"
+motor = "*"
 
 [dev-packages]
 
