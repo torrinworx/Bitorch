@@ -1,0 +1,33 @@
+version: '3.1'
+
+# Something like this:
+services:
+  node1:
+    build: 
+      context: .
+      dockerfile: dev.dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./node1_data:/Bitorch
+    stdin_open: true
+    tty: true
+
+  node2:
+    build: 
+      context: .
+      dockerfile: dev.dockerfile
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./node2_data:/Bitorch
+    stdin_open: true
+    tty: true
+
+networks:
+  default:
+    driver: bridge

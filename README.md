@@ -113,3 +113,9 @@ If you are excited about the potential of distributed AI and interested in contr
 
 Together, we can build a future where advanced AI is accessible, secure, and beneficial for all.
 
+
+## Moving forward
+Build out three systems to demo proof of concepts and to setup a testing environment the point of these projects are sort of first steps and proof of concepts to get down the test deployments and the first initial core components setup, not fully but just the fundamental tech will be there after we build these out.
+
+1. bit torrent python fastapi docker network, automatically deploy 4 docker containers running the fastapi server, 1 seeder, 3 leechers, so that it can run an automatic test proof of concept of a bit torrent distribution seeding + leeching an ai model like llama or something.
+2. 
