@@ -10,8 +10,15 @@ from utils.mongo import PeerListManager
 router = APIRouter()
 load_dotenv()
 
+peer_list_manager = PeerListManager()
+
+class NodeInfo(BaseModel):
+    ip: str
+    port: int
+    name: str
+
 class Peer(BaseModel):
-    address: str
+    node_info: NodeInfo
 
 @router.post(
     "/register",
@@ -21,13 +28,15 @@ class Peer(BaseModel):
 )
 async def register_peer_endpoint(peer: Peer) -> JSONResponse:
     try:
-        added = await PeerListManager.add_peer(peer.address)
+        node_info = peer.node_info.dict()
+        added = await peer_list_manager.add_peer(node_info=node_info)  # Convert to dict
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
         
         return JSONResponse(
-            content={"message": "You have been registered!", "peer_address": peer.address},
+            content={"message": "You have been registered!", "node_info": peer.node_info},
             status_code=200
         )
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")

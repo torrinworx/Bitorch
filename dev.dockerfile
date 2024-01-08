@@ -1,23 +1,24 @@
-FROM ubuntu:22.04
+FROM python:3.10.11-slim
 
 # Set to non interactive
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Update packages and install necessary tools
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y curl build-essential python3-dev gcc libgl1-mesa-glx python3-pip
+ENV ENV=development
 
 # Set working dir
 WORKDIR /Bitorch
 
-### Bitorch Setup ###
+# Update packages and install necessary tools
+RUN apt-get update && \
+    apt-get upgrade -y
 
-# Copy app to container
-COPY ./ /Bitorch
+### Bitorch Setup ###
+COPY ./ /Bitorch/
 
 # Install Pipenv
-RUN pip install pipenv
+RUN pip install --no-cache-dir pipenv && \
+    pipenv install
 
-# Install Python dependencies using pipenv
-RUN pipenv install
+EXPOSE 8000
+
+# Start backend FastAPI server and frontend Express server
+CMD ["sh", "-c", "pipenv run python ./backend/run.py"]

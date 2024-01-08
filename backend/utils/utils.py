@@ -1,5 +1,7 @@
 # General and miscelanious utility tools used by any file in the repo
 import os
+import sys
+import ast
 import httpx
 import socket
 import configparser
@@ -12,21 +14,31 @@ class Utils:
 
         # Create a config parser object
         config = configparser.ConfigParser()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '../', '.config')
 
         # Read the config file
-        config.read('config.config')
+        config.read(config_file)
 
         # Extract and return the configuration data for the specified environment
-        # This will return the source nodes as a dictionary for the specified environment
         section = 'production' if env == 'production' else 'development'
         if section in config:
-            source_nodes = {key: value for key, value in config.items(section)}
+            source_nodes = {}
+            for key, value in config.items(section):
+                # Parse the string value into a dictionary
+                try:
+                    node_info = ast.literal_eval(value)
+                    if isinstance(node_info, dict):
+                        source_nodes[key] = node_info
+                    else:
+                        raise ValueError
+                except (SyntaxError, ValueError):
+                    raise ValueError(f"Invalid format for node '{key}' in section '{section}'.")
             return source_nodes
         else:
             raise Exception(f"Configuration section '{section}' not found in config file.")
     
     @staticmethod
-    def get_ip_address():
+    async def get_ip_address():
         # Check the environment
         env = os.getenv('ENV', 'development').lower()
 

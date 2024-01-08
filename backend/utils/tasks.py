@@ -6,13 +6,13 @@
 # called by a function elsewhere in the codebase.
 
 import httpx
-import asyncio
 from utils.utils import Utils
 
 class StartupTasks:
     @staticmethod
     async def run():
         await PexTasks.startup_check()
+        # await PexTasks.request_register()
 
 class PexTasks:
     @staticmethod
@@ -20,28 +20,53 @@ class PexTasks:
         # TODO: Peer connection function, check if peers list is empty
         # then search for more peers to connect to to start things off.
         print("Startup check function ran")
+        
+    def get_my_node_info():
+        # TODO: Create function to get the current nodes node_info to send to other nodes
+        pass
     
     @staticmethod
     async def request_register():
-        config = Utils.load_config()
-        source_nodes = config.get('source_nodes', {})
-        
-        # Assuming the current node's address is available as a local variable or from config
-        current_node_address = Utils.get_ip_address()
+        source_nodes = Utils.load_config()
+        current_node_address = await Utils.get_ip_address()
 
-        # Register with each source node
-        for node, address in source_nodes.items():
+        # Print the nodes we're attempting to connect to
+        print("Attempting to connect to the following nodes:")
+        for node, node_info in source_nodes.items():
+            print(f"Node: {node}, Info: {node_info}")
+        print("\n")
+        
+        # TODO: Check if self is node0 before making this request
+        
+        # Try to register with each source node
+        for node, node_info in source_nodes.items():
             try:
+                # Construct the URL from the node info
+                ip = node_info.get('ip')
+                port = node_info.get('port')
+                url = f"http://{ip}:{port}/register"
+                print(url)
+                
+                my_node_info = {'ip': current_node_address, 'port': 8000, 'name': 'yo mama\'sasdfasdfasdfasdfasd'}
+                print(my_node_info)
+                
+                if current_node_address == "node0":
+                    return True # No registration needed because we are the og source node
+            
                 async with httpx.AsyncClient() as client:
-                    response = await client.post(f"http://{address}/register", json={"address": current_node_address})
+                    print(f"Attempting to register with {url}")
+                    response = await client.post(url, json={"node_info": my_node_info})
                     
                     if response.status_code == 200:
                         print(f"Registered with {node} successfully.")
+                        return True  # Registration successful
                     else:
                         print(f"Failed to register with {node}: {response.text}")
             except Exception as e:
                 print(f"Error registering with {node}: {e}")
-
+        
+        return False
+    
     @staticmethod
     async def update_peer_list():
         # Implement the logic to update the peer list
@@ -50,4 +75,5 @@ class PexTasks:
     @staticmethod
     async def send_health_checks():
         print("Scheduled health check function ran")
+        return False
         # Implement the logic to send health checks

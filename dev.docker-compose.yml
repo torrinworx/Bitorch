@@ -1,32 +1,40 @@
+# For the lazy:
+# Build: docker compose -f .\dev.docker-compose.yml build --no-cache
+# Run: docker compose -f .\dev.docker-compose.yml up
+
 version: '3.1'
 
-# Something like this:
+name: bitorch-development
+
 services:
-  node1:
-    build: 
+  node0:
+    container_name: node0
+    build:
       context: .
       dockerfile: dev.dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
-    volumes:
-      - ./node1_data:/Bitorch
     stdin_open: true
     tty: true
-
-  node2:
-    build: 
+  node1:
+    container_name: node1
+    build:
       context: .
       dockerfile: dev.dockerfile
     ports:
       - "8001:8000"
     env_file:
       - .env
-    volumes:
-      - ./node2_data:/Bitorch
     stdin_open: true
     tty: true
+
+  mongo:
+    container_name: mongodb
+    image: mongo
+    ports:
+      - "27017:27017"
 
 networks:
   default:
