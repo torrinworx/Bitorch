@@ -8,6 +8,12 @@ A plan for building a distributed system to run AI models BitTorrent style with 
 
 **Bitorch** offers a decentralized approach to distributing and running AI models, moving away from reliance on centralized corporations. In an era where the call for open-source and decentralized AI is growing louder, Bitorch steps in to address this need. Utilizing a BitTorrent-like system for model sharing and a blockchain-based mechanism for secure and fair transactions, Bitorch rewards nodes that contribute computational power. Our objective is to make the use and contribution to AI models efficient, transparent, and accessible to all. This project draws inspiration from the [Petals](https://github.com/bigscience-workshop/petals) project by BigScience, building on the idea of collaborative and open AI development.
 
+Bitorch has four main components:
+1. **Peer Exchange** network to allow nodes on the network to communicate with eachother in a decentralized manner
+2. **Distributed Inference**, allowing ai models to be ran on multiple nodes through chunking of the model, while securely ensuring the output is legitemit.
+3. **Bittorrent-style model distribution system**, allowing nodes on the network to upload, seed, and leech ai models to other nodes on the network.
+4. **Bitcoin/Blockchain-style compensation mechanism**, ensentivises nodes to run hardware on the network by rewarding nodes that run popular models.
+
 # Main 
 ## 1. BitTorrent-like Model Distribution:
 - **Function**: This involves distributing AI models across a network of user-contributed computers (seeders and leechers). Seeders provide chunks of the model, and leechers download and subsequently seed these chunks.
