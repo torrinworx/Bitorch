@@ -1,6 +1,7 @@
 # General and miscelanious utility tools used by any file in the repo
 import os
 import sys
+import ast
 import json
 import socket
 
@@ -42,6 +43,42 @@ class Utils:
             # This is also suitable for Docker containers communicating within the same network
             hostname = socket.gethostname()
             return socket.gethostbyname(hostname)
+    
+    @staticmethod
+    async def get_source_nodes():
+        # Load the entire configuration
+        config_dict = Utils.load_config()
+
+        # Select the appropriate section based on the environment
+        section = "production" if Utils.env == "production" else "development"
+
+        # Extract source nodes for the specified environment
+        if section in config_dict:
+            source_nodes = {}
+            for key, value in config_dict[section].items():
+                # Parse the string value into a dictionary
+                try:
+                    node_info = ast.literal_eval(value)
+                    if isinstance(node_info, dict):
+                        source_nodes[key] = node_info
+                    else:
+                        raise ValueError
+                except (SyntaxError, ValueError):
+                    raise ValueError(
+                        f"Invalid format for node '{key}' in section '{section}'."
+                    )
+        else:
+            raise ValueError(f"Section '{section}' not found in configuration.")
+    
+    @staticmethod
+    async def get_my_node():
+        node_info = {}
+
+        node_info["ip"] = await Utils.get_ip_address()
+        node_info["port"] = os.getenv("BACKEND_PORT")
+        node_info["name"] = os.getenv("NODE_NAME")
+
+        return node_info
 
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
