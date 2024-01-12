@@ -27,6 +27,4 @@ def mount_api_routes(directory: str, package_name: str) -> None:
             if hasattr(module, 'router'):
                 router.include_router(module.router)
 
-# Getting the current folder in a more readable manner using pathlib
-current_folder = Path(__file__).parent.absolute()
-mount_api_routes(str(current_folder), __name__)
+mount_api_routes(str(Path(__file__).parent.absolute()), __name__)

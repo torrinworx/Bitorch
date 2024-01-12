@@ -34,9 +34,7 @@ class Utils:
                 except (SyntaxError, ValueError):
                     raise ValueError(f"Invalid format for node '{key}' in section '{section}'.")
             return source_nodes
-        else:
-            raise Exception(f"Configuration section '{section}' not found in config file.")
-    
+
     @staticmethod
     async def get_ip_address():
         # Check the environment
