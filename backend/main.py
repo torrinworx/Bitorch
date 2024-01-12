@@ -19,9 +19,8 @@ async def app_lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown logic here
     scheduler.shutdown()
-    await mongo.peer_list_manager.close_mongo_connection()
+    await mongo.mongo_manager.close_connection()
 
 
 app = FastAPI(

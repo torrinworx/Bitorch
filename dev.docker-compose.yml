@@ -15,9 +15,13 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .docker.env
+    environment:
+      - NODE_NAME=node0
+      - BACKEND_PORT=8000
     stdin_open: true
     tty: true
+
   node1:
     container_name: node1
     build:
@@ -26,7 +30,10 @@ services:
     ports:
       - "8001:8000"
     env_file:
-      - .env
+      - .docker.env
+    environment:
+      - NODE_NAME=node1
+      - BACKEND_PORT=8001
     stdin_open: true
     tty: true
 

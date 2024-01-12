@@ -23,23 +23,6 @@ class ServerManager:
                     return port
                 port += 1
 
-    def write_port_to_config(self, port):
-        config_file = os.path.join(self.exe_dir, '../', '.config')
-        # Create a config parser object
-        config = configparser.ConfigParser()
-
-        # Read the existing config file
-        config.read(config_file)
-
-        # Add or update the backend port
-        if 'backend' not in config:
-            config['backend'] = {}
-        config['backend']['port'] = str(port)
-
-        # Write the updated configuration back to the file
-        with open(config_file, 'w') as file:
-            config.write(file)
-
     def _environment_check(self):
         if self.env == "production":
             print("> Operating in production mode. Skipping environment checks.")
@@ -85,10 +68,8 @@ class ServerManager:
             parsed_url = urlparse(self.backend_url)
             host, port = parsed_url.hostname, parsed_url.port
             uvicorn.run("main:app", host=host, port=port, reload=True)
-        
         else:
             host, port = '0.0.0.0', self.find_available_port(self.default_port)
-            self.write_port_to_config(port)
             uvicorn.run(app, host=host, port=port, reload=False)
 
 if __name__ == "__main__":

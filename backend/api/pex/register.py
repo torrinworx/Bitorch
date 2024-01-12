@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from utils.mongo import peer_list_manager
+from .pex_mongo import PexMongo
 
 
 class Peer(BaseModel):
@@ -28,8 +28,8 @@ load_dotenv()
 )
 async def register_peer_endpoint(peer: Peer) -> JSONResponse:
     try:
-        peer_dict = peer.dict()  # Convert to dict
-        added = await peer_list_manager.add_peer(node_info=peer_dict)
+        peer_dict = peer.dict()
+        added = await PexMongo.add_peer(node_info=peer_dict)
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
