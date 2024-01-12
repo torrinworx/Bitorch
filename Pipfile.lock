@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "039610d6a78f2eb25ff0d1cfa1dc6de191b3ee802deeae38df74dc43660bad21"
+            "sha256": "6e1463e52e9430fefe4c263e70f342f01aa630c266852bdc609e98c590e13461"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,6 +23,17 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==4.2.0"
+        },
+        "apscheduler": {
+            "extras": [
+                "mongoengine"
+            ],
+            "hashes": [
+                "sha256:e6df071b27d9be898e486bc7940a7be50b4af2e9da7c08f0744a96d4bd4cef4a",
+                "sha256:fb91e8a768632a4756a585f79ec834e0e27aad5860bac7eaa523d9ccefd87661"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==3.10.4"
         },
         "certifi": {
             "hashes": [
@@ -376,14 +387,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==4.6.1"
         },
-        "python-dateutil": {
-            "hashes": [
-                "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86",
-                "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"
-            ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==2.8.2"
-        },
         "python-dotenv": {
             "hashes": [
                 "sha256:a8df96034aae6d2d50a4ebe8216326c61c3eb64836776504fcca410e5937a3ba",
@@ -393,13 +396,12 @@
             "markers": "python_version >= '3.8'",
             "version": "==1.0.0"
         },
-        "redbird": {
+        "pytz": {
             "hashes": [
-                "sha256:6a1fe83fa9dfc0c5b9cb256b54376c299c423f2daba7bcbc081a820ff5b3c6c1",
-                "sha256:9ef1098f2a0e68afe40349475018f7694b05bdf92250772cd8d0126f26de58a9"
+                "sha256:7b4fddbeb94a1eba4b557da24f19fdf9db575192544270a9101d8509f9f43d7b",
+                "sha256:ce42d816b81b68506614c11e8937d3aa9e41007ceb50bfdcb0749b921bf646c7"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==0.7.1"
+            "version": "==2023.3.post1"
         },
         "requests": {
             "hashes": [
@@ -409,15 +411,6 @@
             "index": "pypi",
             "markers": "python_version >= '3.7'",
             "version": "==2.31.0"
-        },
-        "rocketry": {
-            "hashes": [
-                "sha256:11d1fb3d2856c5b2727bb4814c4f2bfbd2803067eebeac872d34a4c7a6756825",
-                "sha256:d8755e909026ba401174218bc0a0958044973244cd07e1405e80f85512440253"
-            ],
-            "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==2.5.1"
         },
         "schedule": {
             "hashes": [
@@ -459,6 +452,22 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==4.9.0"
+        },
+        "tzdata": {
+            "hashes": [
+                "sha256:aa3ace4329eeacda5b7beb7ea08ece826c28d761cda36e747cfbf97996d39bf3",
+                "sha256:dd54c94f294765522c77399649b4fefd95522479a664a0cec87f41bebc6148c9"
+            ],
+            "markers": "platform_system == 'Windows'",
+            "version": "==2023.4"
+        },
+        "tzlocal": {
+            "hashes": [
+                "sha256:49816ef2fe65ea8ac19d19aa7a1ae0551c834303d5014c6d5a62e4cbda8047b8",
+                "sha256:8d399205578f1a9342816409cc1e46a93ebd5755e39ea2d85334bea911bf0e6e"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==5.2"
         },
         "urllib3": {
             "hashes": [

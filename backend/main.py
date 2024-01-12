@@ -1,19 +1,28 @@
 import logging
-from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api import router as api_router
 from utils.tasks import StartupTasks
+from utils.scheduler import scheduler
+import utils.mongo as mongo
 
 load_dotenv()
+
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     await StartupTasks.run()
+    scheduler.run()
+
     yield
+
     # Shutdown logic here
+    scheduler.shutdown()
+    await mongo.peer_list_manager.close_mongo_connection()
+
 
 app = FastAPI(
     title="Bitorch",
@@ -21,7 +30,7 @@ app = FastAPI(
     """,
     summary="Backend server documentation for Bitorch",
     version="1.0.0",
-    lifespan=app_lifespan
+    lifespan=app_lifespan,
 )
 
 # CORS configuration
@@ -42,5 +51,5 @@ app.include_router(api_router)
 # Configure the logging format and level
 logging.basicConfig(
     format="%(levelname)s: %(message)s",
-    level=logging.INFO # TODO: Set based on the env: development/deployment or whatever, maybe even a logging env var to set the logging level.
+    level=logging.INFO,  # TODO: Set based on the env: development/deployment or whatever, maybe even a logging env var to set the logging level.
 )

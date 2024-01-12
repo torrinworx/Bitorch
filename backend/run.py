@@ -7,8 +7,6 @@ import importlib.metadata as importlib_metadata
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import app
-
 class ServerManager:
     def __init__(self):
         self.env = os.environ.get("ENV", "development").lower()
@@ -73,52 +71,25 @@ class ServerManager:
                 raise ImportError(f"Required package {package} not installed.")
 
         print("> Environment checks passed successfully.\n")
-    
-    async def _run_server(self, app_instance, host, port):
-        # NOTE: Import here as to not interfear with the environment_check
-        import asyncio
-        import uvicorn
-        from utils.scheduler import app as app_rocketry      
-        
-        class Server(uvicorn.Server):
-            """
-            Customized uvicorn.Server
-
-            Uvicorn server overrides signals, and we need to include
-            Rocketry to the signals.
-            """
-            def handle_exit(self, sig: int, frame) -> None:
-                app_rocketry.session.shut_down()
-                return super().handle_exit(sig, frame)
-
-        config = uvicorn.Config(app_instance, host=host, port=port, workers=1, loop="asyncio")
-        server = Server(config=config)
-
-        api = asyncio.create_task(server.serve())
-        sched = asyncio.create_task(app_rocketry.serve())
-
-        await asyncio.wait([sched, api])
 
     def run(self):
         self._environment_check()
 
-        # NOTE: Import here as to not interfear with the environment_check
-        import asyncio
+        import uvicorn
         from dotenv import load_dotenv
-        
-        load_dotenv()
+        from backend.main import app
 
-        self.write_port_to_config(self.default_port)
-        host, port = ('0.0.0.0', self.find_available_port(self.default_port))
+        load_dotenv()
 
         if self.env == "development":
             parsed_url = urlparse(self.backend_url)
             host, port = parsed_url.hostname, parsed_url.port
-            app_instance = "main:app"
-        elif self.env == "production":
-            app_instance = app
-
-        asyncio.run(self._run_server(app_instance, host, port))
+            uvicorn.run("main:app", host=host, port=port, reload=True)
+        
+        else:
+            host, port = '0.0.0.0', self.find_available_port(self.default_port)
+            self.write_port_to_config(port)
+            uvicorn.run(app, host=host, port=port, reload=False)
 
 if __name__ == "__main__":
     ServerManager().run()

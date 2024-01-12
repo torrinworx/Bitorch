@@ -12,8 +12,8 @@ libtorrent = "*"
 motor = "*"
 httpx = "*"
 schedule = "*"
-rocketry = "*"
 pydantic = "==1.10.13"
+apscheduler = {extras = ["mongoengine"], version = "*"}
 
 [dev-packages]
 

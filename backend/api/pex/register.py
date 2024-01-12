@@ -1,42 +1,42 @@
 # Accepts peer registration requests
 
+import traceback
+
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from utils.mongo import PeerListManager
+from utils.mongo import peer_list_manager
 
-router = APIRouter()
-load_dotenv()
 
-peer_list_manager = PeerListManager()
-
-class NodeInfo(BaseModel):
+class Peer(BaseModel):
     ip: str
     port: int
     name: str
 
-class Peer(BaseModel):
-    node_info: NodeInfo
+
+router = APIRouter()
+load_dotenv()
+
 
 @router.post(
     "/register",
     tags=["Peer Exchange"],
     summary="Register a new peer",
-    description="Accepts peer registration requests and adds them to the peer list."
+    description="Accepts peer registration requests and adds them to the peer list.",
 )
 async def register_peer_endpoint(peer: Peer) -> JSONResponse:
     try:
-        node_info = peer.node_info.dict()
-        added = await peer_list_manager.add_peer(node_info=node_info)  # Convert to dict
+        peer_dict = peer.dict()  # Convert to dict
+        added = await peer_list_manager.add_peer(node_info=peer_dict)
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
-        
+
         return JSONResponse(
-            content={"message": "You have been registered!", "node_info": peer.node_info},
-            status_code=200
+            content={"message": "You have been registered!", "node_info": peer_dict},
+            status_code=200,
         )
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+    except Exception:
+        print(traceback.format_exc())  # Print the full traceback error
+        raise HTTPException(status_code=500, detail="Internal Server Error")
