@@ -1,23 +1,23 @@
 {
-    "development": {
-        "node0": {
-            "ip": "node0",
+    "development": [
+        {
+            "ip": "peeer0",
             "port": 8000,
-            "name": "yo mama's node"
+            "name": "yo mama's peer"
         }
-    },
-    "production": {
-        "node1": {
+    ],
+    "production": [
+        {
             "ip": "prod-host1",
             "port": 9090,
             "username": "user_prod1",
             "password": "prod_pass1"
         },
-        "node2": {
+        {
             "ip": "prod-host2",
             "port": 9091,
             "username": "user_prod2",
             "password": "prod_pass2"
         }
-    }
+    ]
 }

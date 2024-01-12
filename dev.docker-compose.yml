@@ -7,8 +7,8 @@ version: '3.1'
 name: bitorch-development
 
 services:
-  node0:
-    container_name: node0
+  peer0:
+    container_name: peer0
     build:
       context: .
       dockerfile: dev.dockerfile
@@ -17,13 +17,13 @@ services:
     env_file:
       - .docker.env
     environment:
-      - NODE_NAME=node0
+      - PEER_NAME=peer0
       - BACKEND_PORT=8000
     stdin_open: true
     tty: true
 
-  node1:
-    container_name: node1
+  peer1:
+    container_name: peer1
     build:
       context: .
       dockerfile: dev.dockerfile
@@ -32,7 +32,7 @@ services:
     env_file:
       - .docker.env
     environment:
-      - NODE_NAME=node1
+      - PEER_NAME=peer1
       - BACKEND_PORT=8001
     stdin_open: true
     tty: true

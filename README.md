@@ -6,13 +6,13 @@
 
 A plan for building a distributed system to run AI models BitTorrent style with a secure compensation mechanism.
 
-**Bitorch** offers a decentralized approach to distributing and running AI models, moving away from reliance on centralized corporations. In an era where the call for open-source and decentralized AI is growing louder, Bitorch steps in to address this need. Utilizing a BitTorrent-like system for model sharing and a blockchain-based mechanism for secure and fair transactions, Bitorch rewards nodes that contribute computational power. Our objective is to make the use and contribution to AI models efficient, transparent, and accessible to all. This project draws inspiration from the [Petals](https://github.com/bigscience-workshop/petals) project by BigScience, building on the idea of collaborative and open AI development.
+**Bitorch** offers a decentralized approach to distributing and running AI models, moving away from reliance on centralized corporations. In an era where the call for open-source and decentralized AI is growing louder, Bitorch steps in to address this need. Utilizing a BitTorrent-like system for model sharing and a blockchain-based mechanism for secure and fair transactions, Bitorch rewards peers that contribute computational power. Our objective is to make the use and contribution to AI models efficient, transparent, and accessible to all. This project draws inspiration from the [Petals](https://github.com/bigscience-workshop/petals) project by BigScience, building on the idea of collaborative and open AI development.
 
 Bitorch has four main components:
-1. **Peer Exchange** network to allow nodes on the network to communicate with eachother in a decentralized manner
-2. **Distributed Inference**, allowing ai models to be ran on multiple nodes through chunking of the model, while securely ensuring the output is legitemit.
-3. **Bittorrent-style model distribution system**, allowing nodes on the network to upload, seed, and leech ai models to other nodes on the network.
-4. **Bitcoin/Blockchain-style compensation mechanism**, ensentivises nodes to run hardware on the network by rewarding nodes that run popular models.
+1. **Peer Exchange** network to allow peers on the network to communicate with eachother in a decentralized manner
+2. **Distributed Inference**, allowing ai models to be ran on multiple peers through chunking of the model, while securely ensuring the output is legitemit.
+3. **Bittorrent-style model distribution system**, allowing peers on the network to upload, seed, and leech ai models to other peers on the network.
+4. **Bitcoin/Blockchain-style compensation mechanism**, ensentivises peers to run hardware on the network by rewarding peers that run popular models.
 
 # Main 
 ## 1. BitTorrent-like Model Distribution:
@@ -23,7 +23,7 @@ Bitorch has four main components:
 Crucial for distributing models, seeders should be incentives to distribute for free, or near free, it should be very inexpensive to download the model and start seeding.
 
 ## 2. Distributed AI Model Execution:
-- **Function**: This system allows various AI models, especially those compatible with Hugging Face libraries, to run on distributed nodes.
+- **Function**: This system allows various AI models, especially those compatible with Hugging Face libraries, to run on distributed peers.
 - **Dynamic Reward System**: Implement a dynamic reward system based on demand. Higher demand for specific models increases the compensation for contributing computing power to that model.
 - **Scalability and Efficiency**: Ensuring the system efficiently manages resource allocation based on model demand and network capacity.
 
@@ -34,25 +34,25 @@ Crucial for the actual usage of the network, hardware needs to run the models, a
 - **Practical Blockchain Use**: Unlike many crypto projects filled with speculative and profit-driven motives, our blockchain implementation is strictly practical. It's all about fair compensation and transparency in transactions, not about creating another speculative asset.
 - **Efficiency Over Speculation**: We're choosing a consensus mechanism that is lightweight and efficient. This means moving away from Proof of Work (PoW), which is computationally heavy, towards more sustainable alternatives like Proof of Stake (PoS) or Delegated Proof of Stake (DPoS). These are less resource-intensive and more suited to our goal of maintaining a functional, efficient system.
 - **Implementation Challenge**: The challenge lies in adapting or developing a blockchain system that preserves the privacy and security strengths of Monero, while ensuring it doesn’t hinder the computational performance needed for AI model execution. We're committed to making this technology work for the project's goals, not the other way around.
-- **Purpose-Driven Design**: It's crucial for us to facilitate a value exchange system that’s devoid of the typical 'crypto craze'. Users and nodes contributing hardware to the network need a reliable way to transact, ensuring fair compensation and verification of model outputs, without falling into the pitfalls of the speculative crypto world.
+- **Purpose-Driven Design**: It's crucial for us to facilitate a value exchange system that’s devoid of the typical 'crypto craze'. Users and peers contributing hardware to the network need a reliable way to transact, ensuring fair compensation and verification of model outputs, without falling into the pitfalls of the speculative crypto world.
 
 Our approach is grounded in creating a blockchain system that serves the project’s needs: efficient, fair, and practical. We are committed to steering clear of the profit-seeking and often unsustainable practices seen in much of the cryptocurrency space.
 
-Crucial for users and nodes on the network contributing hardware need to be able to exchange value, users need to pay the nodes that are involved in this system, and a system needs to be in place to veryify that the nodes are producing the output of the models the users pay for.
+Crucial for users and peers on the network contributing hardware need to be able to exchange value, users need to pay the peers that are involved in this system, and a system needs to be in place to veryify that the peers are producing the output of the models the users pay for.
 
 ## 4. Security System:
-- **Function**: The security system incorporates dedicated nodes (Security Nodes) tasked with verifying the safety and integrity of models being distributed across the network. These nodes are essential for maintaining the trustworthiness and reliability of the distributed AI models.
-- **Model Verification**: Security nodes implement robust verification mechanisms, including antivirus scanners and other security protocols, to scrutinize the models for malicious code. Additionally, they might run models in isolated, controlled environments (sandboxes) to test for any suspicious behavior.
-- **Incentives for Security Nodes**: Operators of security nodes are rewarded for their crucial role in safeguarding the network. This incentivization ensures that maintaining high security standards is a priority and attracts participants who are willing to allocate resources to this task.
-- **Activation Protocol**: Security nodes are particularly active during the initial phases of model addition, upload, or seeding. They perform thorough checks on new models before these models are cleared for wider distribution. This protocol ensures that only clean, non-malicious models enter the network.
+- **Function**: The security system incorporates dedicated peers (Security Peers) tasked with verifying the safety and integrity of models being distributed across the network. These peers are essential for maintaining the trustworthiness and reliability of the distributed AI models.
+- **Model Verification**: Security peers implement robust verification mechanisms, including antivirus scanners and other security protocols, to scrutinize the models for malicious code. Additionally, they might run models in isolated, controlled environments (sandboxes) to test for any suspicious behavior.
+- **Incentives for Security Peers**: Operators of security peers are rewarded for their crucial role in safeguarding the network. This incentivization ensures that maintaining high security standards is a priority and attracts participants who are willing to allocate resources to this task.
+- **Activation Protocol**: Security peerss are particularly active during the initial phases of model addition, upload, or seeding. They perform thorough checks on new models before these models are cleared for wider distribution. This protocol ensures that only clean, non-malicious models enter the network.
 - **Continuous Monitoring and Updates**: To keep up with evolving security threats, the security system will require regular updates to its threat detection capabilities. Continuous monitoring and real-time analysis of models help in quickly identifying and mitigating any emergent risks.
 - **Implementation Challenge**: Developing a robust and efficient security system that can handle the complexity and scale of distributed AI models without significantly impacting the network's performance. Balancing security with usability and ensuring that the security measures do not create bottlenecks or false positives is crucial.
 
-Crucial for users to trust nodes and new seeders and modeles.
+Crucial for users to trust peers and new seeders and modeles.
 
 ## 5. A Simple, All-Inclusive Server and GUI:
-- **Function**: The focus of this component is to ensure ease of use and accessibility. The system aims to enable any user to set up a node effortlessly, whether they are tech-savvy or not. The goal is to make participation in the network as seamless as possible.
-- **Straightforward Setup Process**: Users can download a setup file compatible with a wide range of devices. The installation process will guide them through configuring the type of node they wish to operate, whether it's for seeding, running AI models, transaction processing, or security verification.
+- **Function**: The focus of this component is to ensure ease of use and accessibility. The system aims to enable any user to set up a peer effortlessly, whether they are tech-savvy or not. The goal is to make participation in the network as seamless as possible.
+- **Straightforward Setup Process**: Users can download a setup file compatible with a wide range of devices. The installation process will guide them through configuring the type of peer they wish to operate, whether it's for seeding, running AI models, transaction processing, or security verification.
 - **User-Friendly GUI**: The Graphical User Interface (GUI) will be intuitive and straightforward, catering to users with varying levels of technical expertise. It should provide clear options and guidance on how to participate in the network and use the services.
 - **Mandatory Contribution Mechanism**: To foster a community-driven model, users looking to utilize services like ChatGPT will be required to contribute to the network. This can be achieved through various means such as seeding, processing parts of the model, or participating in the blockchain transactions.
 - **Token-Based Usage Model**: The access to and usage of AI services will be directly linked to the tokens in a user's wallet. Running out of tokens while using services necessitates further contribution to the network, either through additional seeding, computational contributions, or purchasing tokens/receiving them from other wallets. This creates a sustainable ecosystem where usage and contribution are balanced.
@@ -62,20 +62,20 @@ Crucial for users to trust nodes and new seeders and modeles.
 
 Crucial for adoption of users and contributors to the network.
 
-## 6. Output Verification and Node Integrity System:
-- **Objective**: This component is designed to ensure the authenticity and accuracy of the outputs generated by the AI models across the network. It aims to prevent malicious or erroneous behavior by verifying that the nodes are genuinely processing and producing legitimate results.
+## 6. Output Verification and Peer Integrity System:
+- **Objective**: This component is designed to ensure the authenticity and accuracy of the outputs generated by the AI models across the network. It aims to prevent malicious or erroneous behavior by verifying that the peers are genuinely processing and producing legitimate results.
 
 - **Output Verification Process**:
    - **Model Output Validation**: Implementing mechanisms to validate the outputs of AI models. This could involve cross-referencing results with expected output patterns or using checksums to ensure the integrity of the data returned.
    - **Anomaly Detection**: Systems to detect anomalies or deviations from standard output patterns, which could indicate manipulation or errors in the computation process.
 
-- **Node Integrity Checks**:
-   - **Activity Monitoring**: Regular checks to confirm that nodes are actively participating in the network and contributing valid computational work.
-   - **Behavior Analysis**: Analyzing the behavior of nodes over time to identify any suspicious or inconsistent activities that might suggest the node is not genuinely processing data.
+- **Peer Integrity Checks**:
+   - **Activity Monitoring**: Regular checks to confirm that peers are actively participating in the network and contributing valid computational work.
+   - **Behavior Analysis**: Analyzing the behavior of peers over time to identify any suspicious or inconsistent activities that might suggest the peer is not genuinely processing data.
 
 - **Incentive Alignment for Honest Participation**:
-   - **Rewarding Accuracy**: Implementing a reward system that incentivizes nodes to produce accurate and honest results. Nodes that consistently deliver valid outputs receive higher rewards or privileges within the network.
-   - **Penalizing Malfeasance**: Establishing penalties for nodes found to be delivering false results or attempting to game the system. This could include temporary or permanent exclusion from the network, loss of accumulated rewards, or other disincentives.
+   - **Rewarding Accuracy**: Implementing a reward system that incentivizes peers to produce accurate and honest results. Peers that consistently deliver valid outputs receive higher rewards or privileges within the network.
+   - **Penalizing Malfeasance**: Establishing penalties for peers found to be delivering false results or attempting to game the system. This could include temporary or permanent exclusion from the network, loss of accumulated rewards, or other disincentives.
 
 - **Security and Privacy Considerations**:
    - **Data Privacy**: Ensuring that the verification process does not compromise the privacy of the data being processed by the AI models.
@@ -91,18 +91,18 @@ Crucial in maintaining the trustworthiness and reliability of the distributed AI
 
 #### Designing a Multi-Factor Consensus Mechanism
 
-- **Proof of Seeding**: Nodes contributing to the seeding of AI models are rewarded, incentivizing the distribution and availability of models.
-- **Proof of Security Compliance**: Nodes passing regular security checks gain higher trust scores, ensuring network integrity and user trust.
-- **Proof of Network Support**: Rewards for nodes based on the number of leechers supported, enhancing network robustness.
-- **Proof of Execution**: Recognition for nodes that successfully run AI models and provide correct results.
-- **Proof of Hosting Demand**: Higher priority or rewards for nodes hosting in-demand models, ensuring adaptation to user needs.
+- **Proof of Seeding**: Peers contributing to the seeding of AI models are rewarded, incentivizing the distribution and availability of models.
+- **Proof of Security Compliance**: Peers passing regular security checks gain higher trust scores, ensuring network integrity and user trust.
+- **Proof of Network Support**: Rewards for peers based on the number of leechers supported, enhancing network robustness.
+- **Proof of Execution**: Recognition for peers that successfully run AI models and provide correct results.
+- **Proof of Hosting Demand**: Higher priority or rewards for peers hosting in-demand models, ensuring adaptation to user needs.
 
 #### Ensuring Fairness and Decentralization
 
-- **Dynamic Trust System**: A system where trust is earned through reliable participation, with a clear path for new nodes to gain trust.
+- **Dynamic Trust System**: A system where trust is earned through reliable participation, with a clear path for new peers to gain trust.
 - **Decentralized Governance**: Network participants have a say in governance decisions, preventing power centralization.
 - **Regular Reassessment**: Periodic reassessment of consensus factors to maintain relevance and effectiveness.
-- **Inclusive Design**: The mechanism does not disproportionately favor certain nodes, allowing equitable participation.
+- **Inclusive Design**: The mechanism does not disproportionately favor certain peers, allowing equitable participation.
 
 #### Trust and Upward Mobility
 

@@ -4,64 +4,130 @@ from utils.utils import Utils
 
 class PexTasks:
     @staticmethod
-    async def startup_tasks():
-        # TODO: Peer connection function, check if peers list is empty
-        # then search for more peers to connect to to start things off.
-        pass
+    async def startup():
+        """
+        Initialize startup tasks for the peer-to-peer network.
+
+        This function is responsible for establishing initial peer connections.
+        It checks if the current peer list is empty and, if so, searches for
+        additional peers to connect to for starting network activities.
+        """
+        await PexTasks.join_network()
 
     @staticmethod
     async def join_network():
-        # Joins the network by attempting to join source nodes from .config.json, this function is only needed to be run once for a given node's initial deployment, unless all nodes are unresponsive
-        # then either no network connection to the internet, or all source nodes are down.
-        source_nodes = (
-            Utils.config["development"]
-            if Utils.env == "development"
-            else Utils.config["production"]
-        )
+        """
+        Join the peer-to-peer network.
 
-        # Try to register with each source node from .config.json
-        for node, node_dict in source_nodes.items():
-            url = f"http://{node['ip']}:{node['port']}/register"
+        This function attempts to join the network by connecting to source peers
+        specified in the .config.json file. It's primarily used during the initial
+        deployment of a peer. If all source peers are unresponsive, it indicates
+        either a lack of internet connectivity or that all source peers are down.
 
-            if Utils.env == "development" and Utils.get_my_node()["name"] == "node0":
-                """
-                Only for development testing:
-                Each node, even the source nodes, should act like and be deployed like any node.
+        In development mode, if the current peer is 'peer0', no registration is
+        required as it acts as an original source peer.
+        """
+        if Utils.env == "development" and Utils.get_my_peer()["name"] == "peer0":
+            print("Yo mama's peer.")
+            return  # No registration needed because we are the og source peer
 
-                Their behavior is the same. The only difference is that their ip addresses are listed
-                in the .config.json file and are from trusted community partners.
-                """
-                print("Yo mama's node.")
-                return  # No registration needed because we are the og source node
+        source_peers = Utils.get_source_peers()
+        PexEndpoints.register_peers(peer=source_peers)
 
-            PexEndpoints.register(url=url, node=node_dict)
+    # @scheduler.schedule_task(
+    #     trigger="interval", seconds=5, id="peer_list_monitor"
+    # )
+    async def peer_list_monitor():
+        """
+        Monitors and maintains the active peers in peer list and the last_seen time.
+
+        my_peer_list = get_peer_list_from_mongo
+
+        for peer in peer_list:
+            keep track of and detect the last time a peer in the peer_list has been requested
+            update_peer_list from. through lastSeen
+
+            last_seen = peer.last_seen
+
+            if 5 minutes < last_seen < 10 minutes, send an update_peer_list() request.
+                response = await PexEndpoints.update_peer_list(peers)
+
+                response_peer_list = response.peer_list
+
+                response_peer_list = filter and remove duplicate or black-listed/blocked peers
+
+                PexEndpoints.register_peers(response_peer_list)
+
+            if greater than 10 minutes sends a health_check() request.
+                if health_check fails, remove from peer_list and mark as "dead".
+
+
+        lastSeen for each peer in peer_list should be updated whenever
+        contacted or successful request returned by a peer in all endpoints.
+
+        TODO: Create universal utils.update_last_seen(peer) function that
+        updates the last time a peer was seen in the network.
+        """
 
 
 class PexEndpoints:
     @staticmethod
-    async def register(url: str, node: dict):
+    async def register_peers(peers: list):
         """
-        Corisponds to the /backend/api/pex/register.py endpoint.
+        Request registration from a list of peers in the network. Adds current peer to their
+        peer_list and receives peer_list truncated from them.
+
+        This method corresponds to the /backend/api/pex/register.py endpoint.
+        It attempts to register the current peer with each source peer in the `peers` list
+        by sending a POST request to each.
+
+        TODO: Design this as a simple two birds with one stone endpoint;
+        register with a peer, peer returns random selection of peer_list capped at some value.
+
+        Parameters:
+        peers (list): A list of dicitonaries, each containing information about a peer.
         """
         try:
             async with httpx.AsyncClient() as client:
-                print(f"Attempting to register with {url}")
-                response = await client.post(url, json=await Utils.get_my_node())
+                for peer in peers:
+                    peer_url = f"http://{peer['ip']}:{peer['port']}/register"
+                    print(f"Attempting to register with {peer_url}")
+                    response = await client.post(
+                        peer_url, json=await Utils.get_my_peer()
+                    )
 
-                if response.status_code == 200:
-                    print(f"Registered with {node} successfully.\n")
-                else:
-                    print(f"Failed to register with {node}: {response.text}\n")
+                    # TODO: PexMongo.add_peers(peer_list: response.peer_list)
+
+                    if response.status_code == 200:
+                        print(f"Registered with {peer} successfully.\n")
+                    else:
+                        print(f"Failed to register with {peer}: {response.text}\n")
         except Exception as e:
-            print(f"Error registering with {node}: {e}\n")
+            print(f"Error in registration process: {e}\n")
 
-    @staticmethod
     async def update_peer_list():
-        # Implement the logic to update the peer list
+        """
+        Request an updated peer list from a list of peers.
+
+        Run periodically for given peers in the peer_list who this peer
+        hasn't requested an update from in a while.
+
+        Measures should be put in place to prevent spam and block peers
+        that spam this endpoint.
+        """
         pass
 
     @staticmethod
-    async def send_health_checks():
-        print("Scheduled health check function ran")
-        return False
-        # Implement the logic to send health checks
+    async def health_checks():
+        """
+        Sends health checks to a list of peers in the network.
+
+        This function is scheduled to run periodically. It sends health check
+        messages to other peers to ensure network integrity and the availability
+        of peers.
+
+        TODO: Implement an algorithm to checkup on peers in the peer_list that haven't
+        been communicated with in a while to check if they are alive. Remove if no
+        response.
+        """
+        pass

@@ -6,6 +6,6 @@ It also contains pex_mongo.py that handles all special mongo operations for Pex.
 
 In the api/pex folder, each api endpoint has it's own endpoint file like
 /backend/api/pex/register.py. In this case the Pex protocol needs a function to
-call that endpoint on other nodes, se we map these endpoints to functions stored
+call that endpoint on other peers, se we map these endpoints to functions stored
 in pex_tasks to keep things simple.
 

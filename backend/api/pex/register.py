@@ -29,12 +29,12 @@ load_dotenv()
 async def register_peer_endpoint(peer: Peer) -> JSONResponse:
     try:
         peer_dict = peer.dict()
-        added = await PexMongo.add_peer(node_info=peer_dict)
+        added = await PexMongo.add_peer(peer_info=peer_dict)
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
         return JSONResponse(
-            content={"message": "You have been registered!", "node_info": peer_dict},
+            content={"message": "You have been registered!", "peer_info": peer_dict},
             status_code=200,
         )
     except Exception:

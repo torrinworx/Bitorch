@@ -42,10 +42,10 @@ scheduler = Scheduler()
 
 # Example usage:
 # @scheduler.schedule_task(
-#     trigger="interval", seconds=5, id="request_register_source_node"
+#     trigger="interval", seconds=5, id="request_register_source_peer"
 # )
-# async def request_register_source_node():
+# async def request_register_source_peer():
 #     result = await PexTasks.request_register()
 
 #     if result:
-#         scheduler.remove_task(task_id="request_register_source_node")
+#         scheduler.remove_task(task_id="request_register_source_peer")
