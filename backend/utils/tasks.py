@@ -1,4 +1,4 @@
-from backend.api.pex.pex_tasks import PexTasks
+from backend.api.pex.pex import PexTasks
 
 
 class StartupTasks:

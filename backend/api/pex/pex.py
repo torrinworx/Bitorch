@@ -1,6 +1,6 @@
 import httpx
 from utils.utils import Utils
-
+from .pex_mongo import PexMongo
 
 class PexTasks:
     @staticmethod
@@ -95,8 +95,10 @@ class PexEndpoints:
                     response = await client.post(
                         peer_url, json=await Utils.get_my_peer()
                     )
+                    
+                    response_peer_list = PexUtils.filter_peers(response['peer_list'])
 
-                    # TODO: PexMongo.add_peers(peer_list: response.peer_list)
+                    PexMongo.add_peers(peer_list=response_peer_list)
 
                     if response.status_code == 200:
                         print(f"Registered with {peer} successfully.\n")
@@ -129,5 +131,15 @@ class PexEndpoints:
         TODO: Implement an algorithm to checkup on peers in the peer_list that haven't
         been communicated with in a while to check if they are alive. Remove if no
         response.
+        """
+        pass
+
+class PexUtils:
+    @staticmethod
+    def filter_peers():
+        """
+        takes in a list of peers, removes duplicated peers already found in the peer_list.
+        
+        removes peers found in the black_list.
         """
         pass
