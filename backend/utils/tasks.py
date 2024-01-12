@@ -64,7 +64,7 @@ class PexTasks:
             try:
                 async with httpx.AsyncClient() as client:
                     print(f"Attempting to register with {url}")
-                    response = await client.post(url, json={"node_info": my_node_info})
+                    response = await client.post(url, json=my_node_info)
 
                     if response.status_code == 200:
                         print(f"Registered with {node} successfully.\n")
