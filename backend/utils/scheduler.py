@@ -41,6 +41,7 @@ scheduler = Scheduler()
 
 
 # Example usage:
+# from utils.scheduler import scheduler
 # @scheduler.schedule_task(
 #     trigger="interval", seconds=5, id="request_register_source_peer"
 # )

@@ -1,9 +1,7 @@
 from typing import List, Optional
 from utils.mongo import mongo_manager
 
-mongo_manager = mongo_manager
 collection_name = "peers"
-
 
 class PexMongo:
     @staticmethod
@@ -47,7 +45,7 @@ class PexMongo:
 
     @staticmethod
     async def update_peer(
-        self, old_peer_info: dict, new_peer_info: dict
+        old_peer_info: dict, new_peer_info: dict
     ) -> Optional[dict]:
         """
         Update a peer's peer_info.

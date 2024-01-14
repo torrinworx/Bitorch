@@ -5,7 +5,8 @@ import configparser
 from urllib.parse import urlparse
 import importlib.metadata as importlib_metadata
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "backend")))
+
 
 class ServerManager:
     def __init__(self):
@@ -18,7 +19,7 @@ class ServerManager:
         port = start_port
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                result = sock.connect_ex(('localhost', port))
+                result = sock.connect_ex(("localhost", port))
                 if result != 0:  # Port is available
                     return port
                 port += 1
@@ -40,12 +41,12 @@ class ServerManager:
         if not os.path.exists("Pipfile"):
             raise EnvironmentError("Pipfile not found. Please ensure it exists.")
 
-        if 'PIPENV_ACTIVE' not in os.environ:
+        if "PIPENV_ACTIVE" not in os.environ:
             raise EnvironmentError("Script not running within a Pipenv shell.")
 
         config = configparser.ConfigParser()
-        config.read('Pipfile')
-        required_packages = {pkg.strip('"') for pkg in config['packages']}
+        config.read("Pipfile")
+        required_packages = {pkg.strip('"') for pkg in config["packages"]}
 
         for package in required_packages:
             try:
@@ -69,8 +70,9 @@ class ServerManager:
             host, port = parsed_url.hostname, parsed_url.port
             uvicorn.run("main:app", host=host, port=port, reload=True)
         else:
-            host, port = '0.0.0.0', self.find_available_port(self.default_port)
+            host, port = "0.0.0.0", self.find_available_port(self.default_port)
             uvicorn.run(app, host=host, port=port, reload=False)
+
 
 if __name__ == "__main__":
     ServerManager().run()

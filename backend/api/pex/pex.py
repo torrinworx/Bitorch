@@ -2,6 +2,7 @@ import httpx
 from utils.utils import Utils
 from .pex_mongo import PexMongo
 
+
 class PexTasks:
     @staticmethod
     async def startup():
@@ -27,12 +28,13 @@ class PexTasks:
         In development mode, if the current peer is 'peer0', no registration is
         required as it acts as an original source peer.
         """
-        if Utils.env == "development" and Utils.get_my_peer()["name"] == "peer0":
+        my_peer = await Utils.get_my_peer()
+        if Utils.env == "development" and my_peer["name"] == "peer0":
             print("Yo mama's peer.")
             return  # No registration needed because we are the og source peer
 
-        source_peers = Utils.get_source_peers()
-        PexEndpoints.register_peers(peer=source_peers)
+        source_peers = await Utils.get_source_peers()
+        await PexEndpoints.register_peers(peers=source_peers)
 
     # @scheduler.schedule_task(
     #     trigger="interval", seconds=5, id="peer_list_monitor"
@@ -68,6 +70,7 @@ class PexTasks:
         TODO: Create universal utils.update_last_seen(peer) function that
         updates the last time a peer was seen in the network.
         """
+        pass
 
 
 class PexEndpoints:
@@ -95,8 +98,8 @@ class PexEndpoints:
                     response = await client.post(
                         peer_url, json=await Utils.get_my_peer()
                     )
-                    
-                    response_peer_list = PexUtils.filter_peers(response['peer_list'])
+
+                    response_peer_list = PexUtils.filter_peers(response["peer_list"])
 
                     PexMongo.add_peers(peer_list=response_peer_list)
 
@@ -134,12 +137,13 @@ class PexEndpoints:
         """
         pass
 
+
 class PexUtils:
     @staticmethod
     def filter_peers():
         """
         takes in a list of peers, removes duplicated peers already found in the peer_list.
-        
+
         removes peers found in the black_list.
         """
         pass
