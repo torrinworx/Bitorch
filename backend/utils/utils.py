@@ -1,8 +1,10 @@
 # General and miscelanious utility tools used by any file in the repo
+
 import os
 import sys
 import json
 import socket
+from bson import ObjectId
 
 import httpx
 
@@ -69,3 +71,12 @@ class Utils:
 
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
+
+
+    class JSONEncoder(json.JSONEncoder):
+        """Extend json-encoder class"""
+
+        def default(self, o):
+            if isinstance(o, ObjectId):
+                return str(o)
+            return json.JSONEncoder.default(self, o)

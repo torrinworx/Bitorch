@@ -1,5 +1,26 @@
-"""
-Peers requesting full peer lists.
+import traceback
 
-This endpoint should only return the peer list if the peer requesting is already in the peer_list
-"""
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
+
+from .pex_mongo import PexMongo
+
+router = APIRouter()
+
+
+@router.get(
+    "/update_peer_list",
+    tags=["Peer Exchange"],
+    summary="Get list of peers",
+    description="Returns a list of all registered peers from the MongoDB database.",
+)
+async def get_peers_endpoint() -> JSONResponse:
+    try:
+        peer_list = await PexMongo.get_all_peers()
+        return JSONResponse(
+            content={"peer_list": peer_list},
+            status_code=200,
+        )
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))

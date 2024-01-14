@@ -1,5 +1,5 @@
 # Accepts peer registration requests
-
+import copy
 import traceback
 
 from pydantic import BaseModel
@@ -19,7 +19,6 @@ class Peer(BaseModel):
 router = APIRouter()
 load_dotenv()
 
-
 @router.post(
     "/register",
     tags=["Peer Exchange"],
@@ -28,15 +27,17 @@ load_dotenv()
 )
 async def register_peer_endpoint(peer: Peer) -> JSONResponse:
     try:
-        peer_dict = peer.dict()
-        added = await PexMongo.add_peer(peer_info=peer_dict)
+        peer = peer.dict()
+        added = await PexMongo.add_peer(peer=copy.deepcopy(
+            peer
+        ))
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
         return JSONResponse(
-            content={"message": "You have been registered!", "peer_info": peer_dict},
+            content={"peer": peer},
             status_code=200,
         )
-    except Exception:
-        print(traceback.format_exc())  # Print the full traceback error
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
