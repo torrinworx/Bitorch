@@ -1,3 +1,5 @@
+# Return peer_list when requested by other peers
+
 import traceback
 
 from fastapi import APIRouter, HTTPException
@@ -9,10 +11,10 @@ router = APIRouter()
 
 
 @router.get(
-    "/update_peer_list",
+    "/peer_list",
     tags=["Peer Exchange"],
     summary="Get list of peers",
-    description="Returns a list of all registered peers from the MongoDB database.",
+    description="Returns a list of all registered peers.",
 )
 async def get_peers_endpoint() -> JSONResponse:
     try:

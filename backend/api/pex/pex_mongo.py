@@ -34,23 +34,36 @@ class PexMongo:
         return success
 
     @staticmethod
-    async def add_peer(peer: dict) -> bool:
+    async def add_peer(peer: dict) -> str:
         """
-        Add a new peer to the database.
+        Add a new peer to the database or update it if it already exists.
+        Check if a peer with the same IP address exists, and update its details if other fields have changed.
         """
-        existing_peer = await mongo_manager.find_documents(collection_name, peer)
+        existing_peer = await mongo_manager.find_documents(
+            collection_name, {"ip": peer["ip"]}
+        )
+        
         if existing_peer:
-            return False
-        await mongo_manager.insert_document(collection_name, peer)
-        return True
+            await mongo_manager.update_document(
+                collection_name,
+                {"ip": peer["ip"]},
+                peer,  # This should be just the fields to update
+            )
+            return "Peer updated"
+        else:
+            # If the peer doesn't exist, add it to the database
+            await mongo_manager.insert_document(collection_name, peer)
+            return "New peer added"
 
     @staticmethod
     async def get_all_peers() -> List[dict]:
         """
-        Retrieve all peers from the database.
+        Retrieve all peers from the database and remove the '_id' field.
         """
         peers = await mongo_manager.find_documents(collection_name, {})
-        return PexMongo.serialize(peers)
+        for peer in peers:
+            peer.pop("_id", None)  # Remove the '_id' field if it exists
+        return peers
 
     @staticmethod
     async def remove_peer(peer_info: dict) -> bool:
