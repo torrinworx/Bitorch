@@ -9,6 +9,8 @@ from utils.tasks import StartupTasks
 from utils.scheduler import scheduler
 import utils.mongo as mongo
 
+from middleware import setup_middlewares
+
 load_dotenv()
 
 
@@ -31,6 +33,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=app_lifespan,
 )
+
+setup_middlewares(app)
 
 # CORS configuration
 ORIGINS = [

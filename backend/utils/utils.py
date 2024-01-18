@@ -76,6 +76,7 @@ class Utils:
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
 
+
     class JSONEncoder(json.JSONEncoder):
         """Extend json-encoder class"""
 
@@ -83,6 +84,7 @@ class Utils:
             if isinstance(o, ObjectId):
                 return str(o)
             return json.JSONEncoder.default(self, o)
+
 
     class Peer(BaseModel):
         """
