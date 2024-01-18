@@ -6,6 +6,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 
 from .pex_mongo import PexMongo
+from utils.utils import Utils
 
 router = APIRouter()
 
@@ -20,7 +21,9 @@ async def get_peers_endpoint() -> Dict[str, Any]:
     try:
         peer_list = await PexMongo.get_all_peers()
         return {
-            "content": {"peer_list": [peer.dict() for peer in peer_list]},
+            "content": {
+                "peer_list": Utils.PublicPeerResponse.to_public(peer_list)
+            },
             "status_code": 200,
         }
     except Exception as e:

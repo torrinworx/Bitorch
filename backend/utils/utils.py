@@ -1,11 +1,14 @@
 # General and miscelanious utility tools used by any file in the repo
 
 import os
+import re
 import sys
 import json
 import socket
 from bson import ObjectId
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel, Field, validator, Extra
+from ipaddress import ip_address, IPv4Address, IPv6Address
 
 import httpx
 
@@ -82,6 +85,73 @@ class Utils:
             return json.JSONEncoder.default(self, o)
 
     class Peer(BaseModel):
-        ip: str
-        port: int
-        name: str
+        """
+        Represents a peer in a network, encapsulating necessary details such as IP address, port, name, etc.
+        This class serves as a critical checkpoint for data validation and security. Given that the data can originate
+        from external sources, rigorous validation is applied to each field to ensure integrity and security before
+        storage in MongoDB. The class employs strict data type enforcement, pattern matching, and range checking
+        to mitigate risks such as injection attacks, data corruption, or unauthorized access attempts.
+        """
+
+        ip: str = Field(..., example="192.168.1.1", max_length=45)
+        port: int = Field(..., gt=1023, lt=65536, example=8080)
+        name: str = Field(..., max_length=100)
+
+        # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
+        _last_active: Optional[str] = Field(None, extra=Extra.ignore)
+
+        @validator("ip")
+        def validate_ip(cls, v):
+            try:
+                ip_obj = ip_address(v)
+                if Utils.env == 'production':
+                    if isinstance(ip_obj, (IPv4Address, IPv6Address)) and ip_obj.is_private:
+                        raise ValueError("IP address must be public in production")
+                # Always perform general IP format validation
+                if not isinstance(ip_obj, (IPv4Address, IPv6Address)):
+                    raise ValueError("IP address must be a valid IPv4 or IPv6 address")
+            except ValueError:
+                raise ValueError("Invalid IP address format")
+            return v
+
+        @validator("port")
+        def validate_port(cls, v):
+            if v <= 1023:
+                raise ValueError("Port number must be non-reserved (greater than 1023)")
+            return v
+
+        @validator("name")
+        def validate_name(cls, v):
+            v = v.strip()
+            if not re.match(r"^[A-Za-z0-9\s-]+$", v):
+                raise ValueError("Name contains invalid characters")
+            return v
+
+    class PublicPeerResponse:
+        @staticmethod
+        def _filter_peer_data(data):
+            """
+            Filters a single Peer instance to include only public-facing fields.
+            """
+            public_fields = {"ip", "port", "name"}
+            return {field: getattr(data, field) for field in public_fields}
+
+        @staticmethod
+        def to_public(data):
+            """
+            Returns a public-facing representation of the data.
+            Handles single Peer instances, lists, tuples, sets, nested structures, and dictionaries.
+            """
+            if isinstance(data, Utils.Peer):
+                return Utils.PublicPeerResponse._filter_peer_data(data)
+            elif isinstance(data, dict):
+                return {
+                    key: Utils.PublicPeerResponse.to_public(value)
+                    for key, value in data.items()
+                }
+            elif isinstance(data, (list, tuple, set)):
+                return type(data)(
+                    Utils.PublicPeerResponse.to_public(item) for item in data
+                )
+            else:
+                return data  # For any other type, return as is

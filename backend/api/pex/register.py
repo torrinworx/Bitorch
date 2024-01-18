@@ -28,7 +28,9 @@ async def register_peer_endpoint(peer: Utils.Peer) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
         return {
-            "content": {"peer": peer},
+            "content": {
+                "peer": Utils.PublicPeerResponse.to_public(peer)
+            },
             "status_code": 200,
         }
     except Exception as e:
