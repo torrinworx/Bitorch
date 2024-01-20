@@ -6,7 +6,7 @@ import sys
 import json
 import socket
 from bson import ObjectId
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator, Extra
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
@@ -83,6 +83,12 @@ class Utils:
             if isinstance(o, ObjectId):
                 return str(o)
             return json.JSONEncoder.default(self, o)
+        
+    class RequestInfo(BaseModel):
+        timestamp: str
+        request_type: str
+        endpoint: str
+        response_code: str
 
     class Peer(BaseModel):
         """
@@ -98,8 +104,13 @@ class Utils:
         name: str = Field(..., max_length=100)
 
         # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
-        _last_active: Optional[str] = Field(None, extra=Extra.ignore)
-
+        _last_seen: Optional[str] = Field(None, extra=Extra.ignore)
+        _request_history: List["Utils.RequestInfo"] = Field([], example=[{
+            "timestamp": "2024-01-19T12:34:56",
+            "request_type": "GET",
+            "response_code": "200"
+        }])
+        
         @validator("ip")
         def validate_ip(cls, v):
             try:
