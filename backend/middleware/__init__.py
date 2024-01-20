@@ -1,8 +1,9 @@
 import os
 import importlib
 from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
 
-# TODO: Verify this works properly and that the rate_limit class is working on all endpoints:
+
 def setup_middlewares(app: FastAPI):
     middleware_dir = os.path.dirname(__file__)
 
@@ -14,6 +15,10 @@ def setup_middlewares(app: FastAPI):
             # Dynamically import the middleware class from the module
             module = importlib.import_module(f".{module_name}", "middleware")
             for name in dir(module):
-                cls = getattr(module, name)
-                # Add the middleware class to the app
-                app.add_middleware(cls)
+                attribute = getattr(module, name)
+                # Ensure that the attribute is a class
+                if isinstance(attribute, type):
+                    # Check if the class is a subclass of BaseHTTPMiddleware
+                    if issubclass(attribute, BaseHTTPMiddleware):
+                        # Add the middleware class to the app
+                        app.add_middleware(attribute)
