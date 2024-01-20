@@ -1,12 +1,13 @@
 from bson import ObjectId
+from datetime import datetime
 from typing import List, Optional
 from utils.mongo import mongo_manager
 
 from utils.utils import Utils
 
-peer_class = Utils.Peer  # Use in new methods
-
 collection_name = "peers"
+
+# TODO: implement race conditions
 
 
 class PexMongo:
@@ -70,23 +71,57 @@ class PexMongo:
         return result
 
     @staticmethod
-    async def remove_peer(peer_model: Utils.Peer) -> bool:
+    async def remove_peer(peer: Utils.Peer) -> bool:
         """
         Remove a peer from the database.
         """
-        peer_dict = peer_model.dict()
+        peer_dict = peer.dict()
         return await mongo_manager.delete_document(collection_name, peer_dict)
 
     @staticmethod
     async def update_peer(
-        old_peer_model: Utils.Peer, new_peer_model: Utils.Peer
+        old_peer: Utils.Peer, new_peer: Utils.Peer
     ) -> Optional[Utils.Peer]:
         """
         Update a peer's info.
         """
         result = await mongo_manager.update_document(
             collection_name=collection_name,
-            query=old_peer_model.dict(),
-            update=new_peer_model.dict()
+            query=old_peer.dict(),
+            update=new_peer.dict(),
         )
-        return new_peer_model if result else None
+        return new_peer if result else None
+
+    @staticmethod
+    async def get_peer(ip: str) -> Optional[Utils.Peer]:
+        """
+        Get an individual peer by their IP address.
+        """
+        peer_dict = await mongo_manager.find_documents(collection_name, {"ip": ip})
+        if peer_dict:
+            return Utils.Peer(**peer_dict[0])
+        return None
+
+    @staticmethod
+    async def update_last_seen(peer: Utils.Peer) -> bool:
+        """
+        Update the 'last seen' timestamp of a peer to the current time.
+        """
+        update_result = await mongo_manager.update_document(
+            collection_name, {"ip": peer.ip}, {"$set": {"_last_seen": datetime.utcnow().isoformat()}}
+        )
+        return bool(update_result)
+
+    @staticmethod
+    async def update_request_history(
+        peer: Utils.Peer, request_info: Utils.RequestInfo
+    ) -> bool:
+        """
+        Append a new request record to the peer's request history.
+        """
+        update_result = await mongo_manager.update_document(
+            collection_name,
+            {"ip": peer.ip},
+            {"$push": {"_request_history": request_info.dict()}},
+        )
+        return bool(update_result)
