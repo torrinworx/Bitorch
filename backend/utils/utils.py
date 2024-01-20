@@ -76,7 +76,6 @@ class Utils:
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
 
-
     class JSONEncoder(json.JSONEncoder):
         """Extend json-encoder class"""
 
@@ -84,7 +83,6 @@ class Utils:
             if isinstance(o, ObjectId):
                 return str(o)
             return json.JSONEncoder.default(self, o)
-
 
     class Peer(BaseModel):
         """
@@ -130,6 +128,36 @@ class Utils:
             return v
 
     class PublicPeerResponse:
+        """
+        Returns a public-facing representation of the data.
+        
+        Example usage in /backend/pex/register.py:
+        
+        from utils.utils import Utils
+        
+        @router.post(
+            "/register",
+            tags=["Peer Exchange"],
+            summary="Register a new peer",
+            description="Accepts peer registration requests and adds them to the peer list.",
+        )
+        async def register_peer_endpoint(peer: Utils.Peer) -> Dict[str, Any]:
+            try:
+                added = await PexMongo.add_peer(peer=copy.deepcopy(peer))
+                if not added:
+                    raise HTTPException(status_code=400, detail="Peer already registered.")
+
+                return {
+                    "content": {
+                        "peer": Utils.PublicPeerResponse.to_public(peer)
+                    },
+                    "status_code": 200,
+                }
+            except Exception as e:
+                print(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+        """
+
         @staticmethod
         def _filter_peer_data(data):
             """
@@ -141,7 +169,6 @@ class Utils:
         @staticmethod
         def to_public(data):
             """
-            Returns a public-facing representation of the data.
             Handles single Peer instances, lists, tuples, sets, nested structures, and dictionaries.
             """
             if isinstance(data, Utils.Peer):
