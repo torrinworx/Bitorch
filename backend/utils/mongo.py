@@ -15,7 +15,9 @@ class MongoDBManager:
         if cls._instance is None:
             cls._instance = super(MongoDBManager, cls).__new__(cls)
             db_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
-            random_db_name = secrets.token_hex(16)
+            random_db_name = os.getenv(
+                "DB_NAME", "bitorch"
+            )  # TODO: make unique name for docker compose dev environment so each peer has it's own db without effecting others.
             try:
                 cls._instance.client = AsyncIOMotorClient(db_url)
                 cls._instance.db = cls._instance.client[random_db_name]
@@ -48,11 +50,15 @@ class MongoDBManager:
         documents = [doc async for doc in cursor]
         return documents
 
+
     async def update_document(
         self, collection_name: str, query: Dict, update: Dict
     ) -> bool:
         collection = self.db[collection_name]
-        result = await collection.update_one(query, {"$set": update})
+        # Check if the update dict contains any key that starts with '$'
+        if not any(key.startswith("$") for key in update):
+            update = {"$set": update}  # Use '$set' as default if no $ operator is found
+        result = await collection.update_one(query, update)
         return result.modified_count > 0
 
     async def delete_document(self, collection_name: str, query: Dict) -> bool:

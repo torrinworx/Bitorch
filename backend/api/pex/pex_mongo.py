@@ -108,20 +108,24 @@ class PexMongo:
         Update the 'last seen' timestamp of a peer to the current time.
         """
         update_result = await mongo_manager.update_document(
-            collection_name, {"ip": peer.ip}, {"$set": {"_last_seen": datetime.utcnow().isoformat()}}
+            collection_name,
+            {"ip": peer.ip},
+            {"$set": {"_last_seen": datetime.utcnow().isoformat()}},
         )
         return bool(update_result)
 
     @staticmethod
-    async def update_request_history(
-        peer: Utils.Peer, request_info: Utils.RequestInfo
+    async def update_peer_request_history(
+        client_ip: str, request_info: Utils.RequestInfo
     ) -> bool:
         """
         Append a new request record to the peer's request history.
         """
+        print(client_ip)
         update_result = await mongo_manager.update_document(
             collection_name,
-            {"ip": peer.ip},
+            {"ip": client_ip},
             {"$push": {"_request_history": request_info.dict()}},
         )
+        print(update_result)
         return bool(update_result)

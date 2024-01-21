@@ -4,15 +4,13 @@ import copy
 import traceback
 from typing import Dict, Any
 
-from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException
+from fastapi import HTTPException
 
 from .pex_mongo import PexMongo
 from utils.utils import Utils
 
 
-router = APIRouter()
-load_dotenv()
+router = Utils.router
 
 
 @router.post(
@@ -28,9 +26,7 @@ async def register_peer_endpoint(peer: Utils.Peer) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
         return {
-            "content": {
-                "peer": Utils.PublicPeerResponse.to_public(peer)
-            },
+            "content": {"peer": Utils.PublicPeerResponse.to_public(peer)},
             "status_code": 200,
         }
     except Exception as e:

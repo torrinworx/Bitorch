@@ -6,11 +6,16 @@ import sys
 import json
 import socket
 from bson import ObjectId
-from typing import Optional, List, Dict, Any
+from datetime import datetime
+from typing import Optional, Callable, List
 from pydantic import BaseModel, Field, validator, Extra
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
 import httpx
+from fastapi.routing import APIRoute
+from fastapi import Request, Response, APIRouter
+from starlette.background import BackgroundTask
+from starlette.responses import StreamingResponse
 
 
 class Utils:
@@ -83,7 +88,7 @@ class Utils:
             if isinstance(o, ObjectId):
                 return str(o)
             return json.JSONEncoder.default(self, o)
-        
+
     class RequestInfo(BaseModel):
         timestamp: str
         request_type: str
@@ -99,24 +104,32 @@ class Utils:
         to mitigate risks such as injection attacks, data corruption, or unauthorized access attempts.
         """
 
-        ip: str = Field(..., example="192.168.1.1", max_length=45)
+        ip: str = Field(..., example="127.0.0.1", max_length=45)
         port: int = Field(..., gt=1023, lt=65536, example=8080)
         name: str = Field(..., max_length=100)
 
         # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
         _last_seen: Optional[str] = Field(None, extra=Extra.ignore)
-        _request_history: List["Utils.RequestInfo"] = Field([], example=[{
-            "timestamp": "2024-01-19T12:34:56",
-            "request_type": "GET",
-            "response_code": "200"
-        }])
-        
+        _request_history: List["Utils.RequestInfo"] = Field(
+            [],
+            example=[
+                {
+                    "timestamp": "2024-01-19T12:34:56",
+                    "request_type": "GET",
+                    "response_code": "200",
+                }
+            ],
+        )
+
         @validator("ip")
         def validate_ip(cls, v):
             try:
                 ip_obj = ip_address(v)
-                if Utils.env == 'production':
-                    if isinstance(ip_obj, (IPv4Address, IPv6Address)) and ip_obj.is_private:
+                if Utils.env == "production":
+                    if (
+                        isinstance(ip_obj, (IPv4Address, IPv6Address))
+                        and ip_obj.is_private
+                    ):
                         raise ValueError("IP address must be public in production")
                 # Always perform general IP format validation
                 if not isinstance(ip_obj, (IPv4Address, IPv6Address)):
@@ -141,11 +154,11 @@ class Utils:
     class PublicPeerResponse:
         """
         Returns a public-facing representation of the data.
-        
+
         Example usage in /backend/pex/register.py:
-        
+
         from utils.utils import Utils
-        
+
         @router.post(
             "/register",
             tags=["Peer Exchange"],
@@ -195,3 +208,71 @@ class Utils:
                 )
             else:
                 return data  # For any other type, return as is
+
+    class BitorchAPIRoute(APIRoute):
+        @staticmethod
+        async def log_info(
+            request_timestamp,
+            client_ip,
+            request: Request,
+            response: Response,
+            req_body,
+            res_body,
+        ):
+            from api.pex.pex_mongo import PexMongo
+
+            # Creating the RequestInfo instance
+            request_info = Utils.RequestInfo(
+                timestamp=request_timestamp.isoformat(),
+                request_type=request.method,
+                endpoint=request.url.path,
+                response_code=str(response.status_code),
+            )
+
+            # Log the request info with PexMongo
+            print(
+                await PexMongo.update_peer_request_history(
+                    client_ip=client_ip, request_info=request_info
+                )
+            )
+
+        def get_route_handler(self) -> Callable:
+            original_route_handler = super().get_route_handler()
+
+            async def custom_route_handler(request: Request) -> Response:
+                # Capture the request timestamp at the start of handling the request
+                request_timestamp = datetime.utcnow()
+
+                client_ip = request.client.host
+                req_body = await request.body()
+                response = await original_route_handler(request)
+
+                # Pass the captured timestamp to log_info
+                if isinstance(response, StreamingResponse):
+                    res_body = b""
+                    async for item in response.body_iterator:
+                        res_body += item
+                    await self.log_info(
+                        request_timestamp,
+                        client_ip,
+                        request,
+                        response,
+                        req_body,
+                        res_body,
+                    )
+                    return response
+                else:
+                    res_body = response.body
+                    await self.log_info(
+                        request_timestamp,
+                        client_ip,
+                        request,
+                        response,
+                        req_body,
+                        res_body,
+                    )
+                    return response
+
+            return custom_route_handler
+
+    router = APIRouter(route_class=BitorchAPIRoute)
