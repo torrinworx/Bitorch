@@ -24,24 +24,5 @@ def setup_middlewares(app):
 
 
 """
-Example:
-
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-
-class CustomMiddleware(BaseHTTPMiddleware):
-    '''
-    CustomMiddleware handles XYZ functionality for each request.
-    It modifies/adds/removes ABC aspects from/to the request or response.
-    '''
-
-    async def dispatch(self, request: Request, call_next):
-        '''
-        Process the request, perform actions, and then continue to the next middleware.
-        '''
-        # Your middleware logic here
-        response = await call_next(request)
-        # Optionally modify the response here
-        return response
-
+For an example on how to construct a middleware file, see /backend/middleware/request_logger.py
 """

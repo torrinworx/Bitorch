@@ -2,7 +2,7 @@ import importlib
 from fastapi import APIRouter
 from pathlib import Path
 
-router = APIRouter()
+router = APIRouter() # Use default FastAPI router here incase some routes have customized routers
 
 def mount_api_routes(directory: str, package_name: str) -> None:
     """

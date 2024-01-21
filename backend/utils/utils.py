@@ -209,71 +209,12 @@ class Utils:
             else:
                 return data  # For any other type, return as is
 
-    # NOTE: Attempt at logging request data for rate limitor for each peer:
+
     class BitorchAPIRoute(APIRoute):
-        @staticmethod
-        async def log_info(
-            request_timestamp,
-            client_ip,
-            request: Request,
-            response: Response,
-            req_body,
-            res_body,
-        ):
-            from api.pex.pex_mongo import PexMongo
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
 
-            # Creating the RequestInfo instance
-            request_info = Utils.RequestInfo(
-                timestamp=request_timestamp.isoformat(),
-                request_type=request.method,
-                endpoint=request.url.path,
-                response_code=str(response.status_code),
-            )
-
-            # Log the request info with PexMongo
-            print(
-                await PexMongo.update_peer_request_history(
-                    client_ip=client_ip, request_info=request_info
-                )
-            )
-
-        def get_route_handler(self) -> Callable:
-            original_route_handler = super().get_route_handler()
-
-            async def custom_route_handler(request: Request) -> Response:
-                # Capture the request timestamp at the start of handling the request
-                request_timestamp = datetime.utcnow()
-
-                client_ip = request.client.host
-                req_body = await request.body()
-                response = await original_route_handler(request)
-
-                # Pass the captured timestamp to log_info
-                if isinstance(response, StreamingResponse):
-                    res_body = b""
-                    async for item in response.body_iterator:
-                        res_body += item
-                    await self.log_info(
-                        request_timestamp,
-                        client_ip,
-                        request,
-                        response,
-                        req_body,
-                        res_body,
-                    )
-                    return response
-                else:
-                    res_body = response.body
-                    await self.log_info(
-                        request_timestamp,
-                        client_ip,
-                        request,
-                        response,
-                        req_body,
-                        res_body,
-                    )
-                    return response
-
-            return custom_route_handler
+            # Add any custom logic here before passing control to the default APIRoute
+            # For example, check the request headers, modify the request, etc.
 
     router = APIRouter(route_class=BitorchAPIRoute)

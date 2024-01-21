@@ -121,11 +121,9 @@ class PexMongo:
         """
         Append a new request record to the peer's request history.
         """
-        print(client_ip)
         update_result = await mongo_manager.update_document(
             collection_name,
             {"ip": client_ip},
             {"$push": {"_request_history": request_info.dict()}},
         )
-        print(update_result)
         return bool(update_result)
