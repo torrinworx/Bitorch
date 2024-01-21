@@ -6,16 +6,13 @@ import sys
 import json
 import socket
 from bson import ObjectId
-from datetime import datetime
-from typing import Optional, Callable, List
+from typing import Optional, List
 from pydantic import BaseModel, Field, validator, Extra
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
 import httpx
 from fastapi.routing import APIRoute
-from fastapi import Request, Response, APIRouter
-from starlette.background import BackgroundTask
-from starlette.responses import StreamingResponse
+from fastapi import APIRouter
 
 
 class Utils:
@@ -120,6 +117,10 @@ class Utils:
                 }
             ],
         )
+        _active_tag: bool # Used to identifiy if the peer has hit the /register endpoint
+        _black_listed: bool # Used to determine if the user has been blacklisted
+        
+        _rate_limited: str # TODO: Maybe some date in the future until not ratelimited? idk how we should do this.
 
         @validator("ip")
         def validate_ip(cls, v):

@@ -1,15 +1,18 @@
 from datetime import datetime
-from starlette.middleware.base import BaseHTTPMiddleware
+
 from starlette.types import ASGIApp
 from fastapi import Response, Request
 from starlette.background import BackgroundTask
-from api.pex.pex_mongo import PexMongo
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from utils.utils import Utils
+from api.pex.pex_mongo import PexMongo
 
 
 class RequestLoggerMiddleware(BaseHTTPMiddleware):
     """
-    Middleware for logging request and response information using PexMongo for analytics and monitoring.
+    Middleware for logging request and response information using PexMongo for analytics and monitoring of peers
+    on the network making requests.
     """
 
     async def dispatch(self, request: Request, call_next) -> ASGIApp:
@@ -47,7 +50,7 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
     @staticmethod
     async def update_peer_history(request, response):
         """
-        Update peer history with request and response information in PexMongo.
+        Update peer history and _last_seen with request and response information in PexMongo.
 
         Args:
         - request (Request): The incoming request.

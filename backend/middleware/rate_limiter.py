@@ -4,17 +4,23 @@
 # class/mongodb and use here.
 
 import time
+
 from fastapi import Request, HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
-class RateLimitMiddlewareBase:
-    def __init__(self, app, max_requests_per_minute=60, blacklist_threshold=5): # TODO: Set these as env vars
+class RateLimiterMiddleware(BaseHTTPMiddleware):
+    def __init__(
+        self, app, max_requests_per_minute=60, blacklist_threshold=5
+    ):  # TODO: Set these as env vars
         self.app = app
         self.max_requests_per_minute = max_requests_per_minute
         self.blacklist_threshold = blacklist_threshold
-        self.peer_last_request = {} # TODO: get from mongodb
-        self.peer_request_count = {} # TODO: get from mongodb
-        self.peer_request_list = {} # TODO: create a request_record dict for each Peer and store in mongodb with timestamps
+        self.peer_last_request = {}  # TODO: get from mongodb
+        self.peer_request_count = {}  # TODO: get from mongodb
+        self.peer_request_list = (
+            {}
+        )  # TODO: create a request_record dict for each Peer and store in mongodb with timestamps
 
     async def __call__(self, request: Request):
         peer_ip = request.client.host
