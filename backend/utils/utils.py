@@ -209,6 +209,7 @@ class Utils:
             else:
                 return data  # For any other type, return as is
 
+    # NOTE: Attempt at logging request data for rate limitor for each peer:
     class BitorchAPIRoute(APIRoute):
         @staticmethod
         async def log_info(
