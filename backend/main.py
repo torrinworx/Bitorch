@@ -1,15 +1,21 @@
 import logging
-from fastapi import FastAPI
-from dotenv import load_dotenv
+from datetime import datetime
 from contextlib import asynccontextmanager
-from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api import router as api_router
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+import utils.mongo as mongo
+from utils.utils import Utils
 from utils.tasks import StartupTasks
 from utils.scheduler import scheduler
-import utils.mongo as mongo
-
+from api.pex.pex_mongo import PexMongo
 from middleware import setup_middlewares
+from backend.api import router as api_router
+from utils.mongo import test_mongo_operations
 
 load_dotenv()
 
@@ -18,6 +24,10 @@ load_dotenv()
 async def app_lifespan(app: FastAPI):
     await StartupTasks.run()
     scheduler.run()
+
+    if Utils.env == "development":
+        test_result = await test_mongo_operations()
+        print("INFO: Mongo test", "passed" if test_result else "failed")
 
     yield
 
@@ -56,3 +66,24 @@ logging.basicConfig(
     format="%(levelname)s: %(message)s",
     level=logging.INFO,  # TODO: Set based on the env: development/deployment or whatever, maybe even a logging env var to set the logging level.
 )
+
+# NOTE: Attempt at logging request data for rate limitor for each peer:
+# @app.exception_handler(StarletteHTTPException)
+# async def custom_exception_handler(request: Request, exc: StarletteHTTPException):
+#     # Construct the RequestInfo instance
+#     request_info = Utils.RequestInfo(
+#         timestamp=datetime.utcnow().isoformat(),
+#         request_type=request.method,
+#         endpoint=request.url.path,
+#         response_code=str(exc.status_code),
+#     )
+
+#     print(request_info)
+
+#     # Log the request info with PexMongo
+#     await PexMongo.update_peer_request_history(
+#         client_ip=request.client.host, request_info=request_info
+#     )
+
+#     # Return the standard error response
+#     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
