@@ -103,27 +103,35 @@ class PexMongo:
         return None
 
     @staticmethod
-    async def update_last_seen(peer: Utils.Peer) -> bool:
-        """
-        Update the 'last seen' timestamp of a peer to the current time.
-        """
-        update_result = await mongo_manager.update_document(
-            collection_name,
-            {"ip": peer.ip},
-            {"$set": {"_last_seen": datetime.utcnow().isoformat()}},
-        )
-        return bool(update_result)
-
-    @staticmethod
     async def update_peer_request_history(
         client_ip: str, request_info: Utils.RequestInfo
     ) -> bool:
         """
-        Append a new request record to the peer's request history.
+        Append a new request record to the peer's request history and update the 'last seen' timestamp.
+        If the peer doesn't exist, create a new peer and add the request history.
         """
-        update_result = await mongo_manager.update_document(
-            collection_name,
-            {"ip": client_ip},
-            {"$push": {"_request_history": request_info.dict()}},
-        )
+        current_time = datetime.utcnow().isoformat()
+        update_result = False
+
+        peer_dict = {"ip": client_ip}
+        peer_exists = await mongo_manager.find_documents(collection_name, peer_dict)
+
+        if not peer_exists:
+            # If the peer doesn't exist, create a new peer and add the request history
+            new_peer = Utils.Peer(
+                ip=client_ip, request_history=[request_info], _last_seen=current_time
+            )
+            await mongo_manager.insert_document(collection_name, new_peer.dict())
+            update_result = True
+        else:
+            # If the peer exists, update the request history and 'last seen' timestamp
+            update_result = await mongo_manager.update_document(
+                collection_name,
+                {"ip": client_ip},
+                {
+                    "$push": {"_request_history": request_info.dict()},
+                    "$set": {"_last_seen": current_time},
+                },
+            )
+
         return bool(update_result)
