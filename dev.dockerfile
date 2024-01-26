@@ -19,6 +19,3 @@ RUN pip install --no-cache-dir pipenv && \
     pipenv install
 
 EXPOSE 8000
-
-# Start backend FastAPI server and frontend Express server
-CMD ["sh", "-c", "pipenv run python run.py"]

@@ -1,6 +1,8 @@
 # For the lazy:
 # Build: docker compose -f .\dev.docker-compose.yml build --no-cache
 # Run: docker compose -f .\dev.docker-compose.yml up
+# Run with watch: docker compose -f .\dev.docker-compose.yml watch
+# ^ Watches the local directory for changes and updates all containers without killing them.
 
 version: '3.1'
 
@@ -9,9 +11,19 @@ name: bitorch-development
 services:
   peer0:
     container_name: peer0
+    command: pipenv run python run.py
     build:
       context: .
       dockerfile: dev.dockerfile
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /Bitorch
+          ignore:
+            - ./.venv
+        - action: rebuild
+          path: ./Pipfile
     ports:
       - "8000:8000"
     env_file:
@@ -19,26 +31,15 @@ services:
     environment:
       - PEER_NAME=peer0
       - BACKEND_PORT=8000
+      - DB_NAME=peer0
+      - MONGO_URI=mongodb://mongodb:27017/peer0
     stdin_open: true
     tty: true
-
-  peer1:
-    container_name: peer1
-    build:
-      context: .
-      dockerfile: dev.dockerfile
-    ports:
-      - "8001:8000"
-    env_file:
-      - .docker.env
-    environment:
-      - PEER_NAME=peer1
-      - BACKEND_PORT=8001
-    stdin_open: true
-    tty: true
+    depends_on:
+      - mongo
 
   mongo:
-    container_name: mongodb
+    container_name: mongo:6
     image: mongo
     ports:
       - "27017:27017"
