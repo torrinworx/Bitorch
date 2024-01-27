@@ -43,7 +43,3 @@ services:
     image: mongo:6.0
     ports:
       - "27017:27017"
-
-# networks:
-#   default:
-#     driver: bridge
