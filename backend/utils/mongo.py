@@ -16,10 +16,6 @@ class MongoDBManager:
         try:
             mongo_url = os.getenv("MONGO_URL", "mongodb://mongodb:27017/")
             db_name = os.getenv("DB_NAME")
-            print(mongo_url)
-            mongo_url = "mongodb://mongodb:27017/"
-            # mongo_url = "mongodb://localhost:27017"
-            print(mongo_url)
             self.client = AsyncIOMotorClient(mongo_url)
             self.db = self.client[db_name]
 
@@ -80,8 +76,10 @@ class MongoDBManager:
             print(f"Error listing collections: {e}")
             return []
 
+    # TODO: Setup proper unit tests using like pytest or something
     async def test(self):
         test_collection = "test"
+        name = "John Doe"
 
         try:
             # Ensure the test collection is fresh
@@ -100,7 +98,7 @@ class MongoDBManager:
 
         try:
             # Insert a document
-            test_document = {"name": "John Doe", "age": 30}
+            test_document = {"name": name, "age": 30}
             if not await self.insert_document(
                 collection_name=test_collection, document=test_document
             ):
@@ -113,7 +111,7 @@ class MongoDBManager:
 
         try:
             # Find documents
-            query = {"name": "John Doe"}
+            query = {"name": name}
             found_documents = await self.find_documents(
                 collection_name=test_collection, query=query
             )
@@ -127,7 +125,7 @@ class MongoDBManager:
 
         try:
             # Update a document
-            update_query = {"name": "John Doe"}
+            update_query = {"name": name}
             update_data = {"$set": {"age": 31}}
             if not await self.update_document(
                 collection_name=test_collection, query=update_query, update=update_data
@@ -152,7 +150,7 @@ class MongoDBManager:
 
         try:
             # Delete a document
-            delete_query = {"name": "John Doe"}
+            delete_query = {"name": name}
             if not await self.delete_document(test_collection, delete_query):
                 print("Failed to delete document.")
                 return False

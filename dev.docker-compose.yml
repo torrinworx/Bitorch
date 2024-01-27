@@ -22,6 +22,7 @@ services:
           target: /Bitorch
           ignore:
             - ./.venv
+            - ./.env
         - action: rebuild
           path: ./Pipfile
     ports:
@@ -33,10 +34,43 @@ services:
       - BACKEND_PORT=8000
       # Set db here so that we can simulate multiple nodes with a single mongodb container with their own db's:
       - DB_NAME=peer0
+      - MONGO_URL=mongodb://mongodb:27017/
     stdin_open: true
     tty: true
     depends_on:
       - mongodb
+  peer1:
+    container_name: peer1
+    command: /bin/sh -c "env && pipenv run python run.py"
+    build:
+      context: .
+      dockerfile: dev.dockerfile
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /Bitorch
+          ignore:
+            - ./.venv
+            - ./.env
+        - action: rebuild
+          path: ./Pipfile
+    ports:
+      - "8001:8000"
+    env_file:
+      - .docker.env
+    environment:
+      - PEER_NAME=peer1
+      - BACKEND_PORT=8000
+      # Set db here so that we can simulate multiple nodes with a single mongodb container with their own db's:
+      - DB_NAME=peer1
+      - MONGO_URL=mongodb://mongodb:27017/
+    stdin_open: true
+    tty: true
+    depends_on:
+      - mongodb
+      - peer0
+
 
   mongodb:
     container_name: mongodb

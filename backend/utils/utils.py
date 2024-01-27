@@ -258,7 +258,9 @@ class Utils:
                     for key, value in data.items()
                 }
             elif isinstance(data, (list, tuple, set)):
-                return type(data)(Utils.PublicPeerResponse.to_public(item) for item in data)
+                return type(data)(
+                    Utils.PublicPeerResponse.to_public(item) for item in data
+                )
             else:
                 raise TypeError(f"Unsupported data structure: {type(data).__name__}")
 
