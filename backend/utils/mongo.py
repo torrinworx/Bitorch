@@ -16,6 +16,7 @@ class MongoDBManager:
         try:
             mongo_url = os.getenv("MONGO_URL", "mongodb://mongodb:27017/")
             db_name = os.getenv("DB_NAME")
+            print(mongo_url)
             mongo_url = "mongodb://mongodb:27017/"
             # mongo_url = "mongodb://localhost:27017"
             print(mongo_url)
@@ -32,12 +33,6 @@ class MongoDBManager:
         if self.client:
             self.client.close()
             print("INFO: MongoDB connection closed.")
-
-    async def create_collection(self, collection_name: str) -> bool:
-        if collection_name in await self.db.list_collection_names():
-            return False
-        await self.db.create_collection(collection_name)
-        return True
 
     async def insert_document(self, collection_name: str, document: Dict) -> bool:
         collection = self.db[collection_name]
@@ -65,63 +60,117 @@ class MongoDBManager:
         result = await collection.delete_one(query)
         return result.deleted_count > 0
 
+    async def create_collection(self, collection_name: str) -> bool:
+        if collection_name in await self.db.list_collection_names():
+            return False
+        await self.db.create_collection(collection_name)
+        return True
+
     async def drop_collection(self, collection_name: str) -> bool:
         if collection_name in await self.db.list_collection_names():
             await self.db.drop_collection(collection_name)
             return True
         return False
 
-    async def test(self):
+    async def list_collections(self) -> List[str]:
         try:
-            # Create a test collection
-            test_collection = "test"
-            # await self.drop_collection(collection_name=test_collection)
+            collection_names = await self.db.list_collection_names()
+            return collection_names
+        except Exception as e:
+            print(f"Error listing collections: {e}")
+            return []
+
+    async def test(self):
+        test_collection = "test"
+
+        try:
+            # Ensure the test collection is fresh
+            if test_collection in await self.list_collections():
+                if not await self.drop_collection(test_collection):
+                    print("Failed to drop existing test collection.")
+                    return False
 
             if not await self.create_collection(test_collection):
+                print("Failed to create test collection.")
                 return False
+        except Exception as e:
+            print(f"Error ensuring fresh test collection: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Insert a document
             test_document = {"name": "John Doe", "age": 30}
             if not await self.insert_document(
                 collection_name=test_collection, document=test_document
             ):
+                print("Failed to insert document.")
                 return False
+        except Exception as e:
+            print(f"Error inserting document: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Find documents
             query = {"name": "John Doe"}
             found_documents = await self.find_documents(
                 collection_name=test_collection, query=query
             )
             if not found_documents:
+                print("No documents found.")
                 return False
+        except Exception as e:
+            print(f"Error finding documents: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Update a document
             update_query = {"name": "John Doe"}
             update_data = {"$set": {"age": 31}}
             if not await self.update_document(
                 collection_name=test_collection, query=update_query, update=update_data
             ):
+                print("Failed to update document.")
                 return False
+        except Exception as e:
+            print(f"Error updating document: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Find documents again to verify update
             updated_documents = await self.find_documents(test_collection, query)
             if not updated_documents or updated_documents[0]["age"] != 31:
+                print("Document update verification failed.")
                 return False
+        except Exception as e:
+            print(f"Error verifying document update: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Delete a document
             delete_query = {"name": "John Doe"}
             if not await self.delete_document(test_collection, delete_query):
+                print("Failed to delete document.")
                 return False
+        except Exception as e:
+            print(f"Error deleting document: {e}")
+            print(traceback.format_exc())
+            return False
 
+        try:
             # Find documents to verify deletion
             post_delete_documents = await self.find_documents(test_collection, query)
             if post_delete_documents:
+                print("Document deletion verification failed.")
                 return False
-
-            # Test completed successfully
-            return True
-
         except Exception as e:
-            print(f"An error occurred during the test: {e}")
+            print(f"Error verifying document deletion: {e}")
             print(traceback.format_exc())
             return False
+
+        # Test completed successfully
+        return True
