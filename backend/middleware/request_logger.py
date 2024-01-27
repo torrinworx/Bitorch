@@ -8,6 +8,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from utils.utils import Utils
 from api.pex.pex_mongo import PexMongo
 
+# TODO: Sanatize request info before logging to db
+
 
 class RequestLoggerMiddleware(BaseHTTPMiddleware):
     """
