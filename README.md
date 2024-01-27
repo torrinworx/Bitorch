@@ -128,3 +128,7 @@ Build out three systems to demo proof of concepts and to setup a testing environ
 
 1. bit torrent python fastapi docker network, automatically deploy 4 docker containers running the fastapi server, 1 seeder, 3 leechers, so that it can run an automatic test proof of concept of a bit torrent distribution seeding + leeching an ai model like llama or something.
 2. 
+
+# Temp bug with docker compose watch:
+
+You'll have to delete the file generated in `C:\Users\<username>\AppData\Local\docker-compose` to prevent an issue with docker version 24.0.7: https://github.com/docker/compose/issues/11066
