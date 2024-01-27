@@ -36,14 +36,14 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      - mongo
+      - mongodb
 
-  mongo:
-    container_name: mongo
+  mongodb:
+    container_name: mongodb
     image: mongo:6.0
     ports:
       - "27017:27017"
 
-networks:
-  default:
-    driver: bridge
+# networks:
+#   default:
+#     driver: bridge

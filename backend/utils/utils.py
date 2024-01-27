@@ -102,12 +102,12 @@ class Utils:
         """
 
         ip: str = Field(..., example="127.0.0.1", max_length=45)
-        port: int = Field(..., gt=1023, lt=65536, example=8080)
-        name: str = Field(..., max_length=100)
+        port: Optional[int] = Field(None, gt=1023, lt=65536, example=8080)
+        name: Optional[str] = Field(None, max_length=100)
 
         # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
         _last_seen: Optional[str] = Field(None, extra=Extra.ignore)
-        _request_history: List["Utils.RequestInfo"] = Field(
+        _request_history: Optional[List["Utils.RequestInfo"]] = Field(
             [],
             example=[
                 {
@@ -119,19 +119,20 @@ class Utils:
         )
         _active_tag: bool # Used to identifiy if the peer has hit the /register endpoint
         _black_listed: bool # Used to determine if the user has been blacklisted
-        
         _rate_limited: str # TODO: Maybe some date in the future until not ratelimited? idk how we should do this.
 
         @validator("ip")
         def validate_ip(cls, v):
+            if Utils.env == "development":
+                return v  # Skip validation in development env
+
             try:
                 ip_obj = ip_address(v)
-                if Utils.env == "production":
-                    if (
-                        isinstance(ip_obj, (IPv4Address, IPv6Address))
-                        and ip_obj.is_private
-                    ):
-                        raise ValueError("IP address must be public in production")
+                if (
+                    isinstance(ip_obj, (IPv4Address, IPv6Address))
+                    and ip_obj.is_private
+                ):
+                    raise ValueError("IP address must be public in production")
                 # Always perform general IP format validation
                 if not isinstance(ip_obj, (IPv4Address, IPv6Address)):
                     raise ValueError("IP address must be a valid IPv4 or IPv6 address")

@@ -1,4 +1,5 @@
 import os
+import traceback
 from typing import List, Dict
 
 from dotenv import load_dotenv
@@ -6,29 +7,31 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
+# TODO: implement race conditions
+# TODO: Investigate and take advantage of connection pooling in motor.
+
 
 class MongoDBManager:
-    _instance = None
+    def __init__(self):
+        try:
+            mongo_url = os.getenv("MONGO_URL", "mongodb://mongodb:27017/")
+            db_name = os.getenv("DB_NAME")
+            mongo_url = "mongodb://mongodb:27017/"
+            # mongo_url = "mongodb://localhost:27017"
+            print(mongo_url)
+            self.client = AsyncIOMotorClient(mongo_url)
+            self.db = self.client[db_name]
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(MongoDBManager, cls).__new__(cls)
-            db_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
-            random_db_name = os.getenv("DB_NAME", "bitorch")  # TODO: make unique name for docker compose dev environment so each peer has it's own db without effecting others.
-            try:
-                cls._instance.client = AsyncIOMotorClient(db_url)
-                cls._instance.db = cls._instance.client[random_db_name]
-                print("INFO: Connected to MongoDB successfully.")
-            except Exception as e:
-                print(f"Error connecting to MongoDB: {e}")
-                cls._instance.client = None
-                cls._instance.db = None
-        return cls._instance
+            print("INFO: Connected to MongoDB.")
+        except Exception as e:
+            print(f"Error connecting to MongoDB: {e}")
+            self.client = None
+            self.db = None
 
-    async def close_connection(self):
+    def __del__(self):
         if self.client:
             self.client.close()
-            self.client = None
+            print("INFO: MongoDB connection closed.")
 
     async def create_collection(self, collection_name: str) -> bool:
         if collection_name in await self.db.list_collection_names():
@@ -61,66 +64,64 @@ class MongoDBManager:
         collection = self.db[collection_name]
         result = await collection.delete_one(query)
         return result.deleted_count > 0
-    
+
     async def drop_collection(self, collection_name: str) -> bool:
         if collection_name in await self.db.list_collection_names():
             await self.db.drop_collection(collection_name)
             return True
         return False
 
+    async def test(self):
+        try:
+            # Create a test collection
+            test_collection = "test"
+            # await self.drop_collection(collection_name=test_collection)
 
-async def test_mongo_operations():
-    mongo_manager = MongoDBManager()
+            if not await self.create_collection(test_collection):
+                return False
 
-    try:
-        # Create a test collection
-        test_collection = "test"
-        await mongo_manager.drop_collection(test_collection)
+            # Insert a document
+            test_document = {"name": "John Doe", "age": 30}
+            if not await self.insert_document(
+                collection_name=test_collection, document=test_document
+            ):
+                return False
 
-        if not await mongo_manager.create_collection(test_collection):
+            # Find documents
+            query = {"name": "John Doe"}
+            found_documents = await self.find_documents(
+                collection_name=test_collection, query=query
+            )
+            if not found_documents:
+                return False
+
+            # Update a document
+            update_query = {"name": "John Doe"}
+            update_data = {"$set": {"age": 31}}
+            if not await self.update_document(
+                collection_name=test_collection, query=update_query, update=update_data
+            ):
+                return False
+
+            # Find documents again to verify update
+            updated_documents = await self.find_documents(test_collection, query)
+            if not updated_documents or updated_documents[0]["age"] != 31:
+                return False
+
+            # Delete a document
+            delete_query = {"name": "John Doe"}
+            if not await self.delete_document(test_collection, delete_query):
+                return False
+
+            # Find documents to verify deletion
+            post_delete_documents = await self.find_documents(test_collection, query)
+            if post_delete_documents:
+                return False
+
+            # Test completed successfully
+            return True
+
+        except Exception as e:
+            print(f"An error occurred during the test: {e}")
+            print(traceback.format_exc())
             return False
-
-        # Insert a document
-        test_document = {"name": "John Doe", "age": 30}
-        if not await mongo_manager.insert_document(test_collection, test_document):
-            return False
-
-        # Find documents
-        query = {"name": "John Doe"}
-        found_documents = await mongo_manager.find_documents(test_collection, query)
-        if not found_documents:
-            return False
-
-        # Update a document
-        update_query = {"name": "John Doe"}
-        update_data = {"$set": {"age": 31}}
-        if not await mongo_manager.update_document(
-            test_collection, update_query, update_data
-        ):
-            return False
-
-        # Find documents again to verify update
-        updated_documents = await mongo_manager.find_documents(test_collection, query)
-        if not updated_documents or updated_documents[0]["age"] != 31:
-            return False
-
-        # Delete a document
-        delete_query = {"name": "John Doe"}
-        if not await mongo_manager.delete_document(test_collection, delete_query):
-            return False
-
-        # Find documents to verify deletion
-        post_delete_documents = await mongo_manager.find_documents(
-            test_collection, query
-        )
-        if post_delete_documents:
-            return False
-
-        # Test completed successfully
-        return True
-
-    except Exception as e:
-        print(f"An error occurred during the test: {e}")
-        return False
-
-mongo_manager = MongoDBManager()

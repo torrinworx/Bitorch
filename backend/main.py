@@ -5,31 +5,29 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import utils.mongo as mongo
 from utils.utils import Utils
 from utils.tasks import StartupTasks
 from utils.scheduler import scheduler
 from middleware import setup_middlewares
 from backend.api import router as api_router
-from utils.mongo import test_mongo_operations
 
 load_dotenv()
 
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
-    await StartupTasks.run()
-    scheduler.run()
+    from utils.mongo import MongoDBManager
 
     if Utils.env == "development":
-        test_result = await test_mongo_operations()
-        print("INFO: Mongo test", "passed" if test_result else "failed")
+        result = await MongoDBManager().test()
+        print("INFO: Mongo test", "passed" if result else "failed")
+
+    await StartupTasks.run()
+    scheduler.run()
 
     yield
 
     scheduler.shutdown()
-    await mongo.mongo_manager.close_connection()
-
 
 app = FastAPI(
     title="Bitorch",
