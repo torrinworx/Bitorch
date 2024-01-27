@@ -1,7 +1,7 @@
 {
     "development": [
         {
-            "ip": "peeer0",
+            "ip": "peer0",
             "port": 8000,
             "name": "yo mama's peer"
         }
