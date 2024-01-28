@@ -8,6 +8,7 @@ from utils.mongo import MongoDBManager
 
 collection_name = "peers"
 
+# TODO: Add better error handling
 
 class PexMongo:
     async def __init__(self):
@@ -68,6 +69,7 @@ class PexMongo:
         """
         Retrieve all peers from the database and remove the '_id' field.
         """
+        # TODO: filter peers that removes duplicate peers or peers on the black_list.
         peers = await MongoDBManager().find_documents(collection_name, {})
         result = []
         for peer_dict in peers:

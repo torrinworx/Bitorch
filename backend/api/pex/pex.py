@@ -1,4 +1,9 @@
+import json
+import traceback
+from typing import List
+
 import httpx
+
 from utils.utils import Utils
 from .pex_mongo import PexMongo
 
@@ -15,6 +20,10 @@ class PexTasks:
         """
         await PexTasks.join_network()
 
+        # Add self to peer list:
+        my_peer = await Utils.get_my_peer()
+        await PexMongo.add_peer(peer=my_peer)
+
     @staticmethod
     async def join_network():
         """
@@ -29,9 +38,8 @@ class PexTasks:
         required as it acts as an original source peer.
         """
         my_peer = await Utils.get_my_peer()
-        if Utils.env == "development" and my_peer["name"] == "peer0":
-            print("Yo mama's peer.")
-            return  # No registration needed because we are the og source peer
+        if Utils.env == "development" and my_peer.name == "peer0":
+            return  # No registration needed because we are the source peer
 
         source_peers = await Utils.get_source_peers()
         await PexEndpoints.register_peers(peers=source_peers)
@@ -39,6 +47,7 @@ class PexTasks:
     # @scheduler.schedule_task(
     #     trigger="interval", seconds=5, id="peer_list_monitor"
     # )
+    @staticmethod
     async def peer_list_monitor():
         """
         Monitors and maintains the active peers in peer list and the last_seen time.
@@ -63,14 +72,17 @@ class PexTasks:
             if greater than 10 minutes sends a health_check() request.
                 if health_check fails, remove from peer_list and mark as "dead".
 
-
         lastSeen for each peer in peer_list should be updated whenever
         contacted or successful request returned by a peer in all endpoints.
 
         TODO: Create universal utils.update_last_seen(peer) function that
         updates the last time a peer was seen in the network.
         """
-        pass
+        # TODO from above:
+        peer_list = PexMongo.get_all_peers()
+
+        for peer in peer_list:
+            pass
 
 
 class PexEndpoints:
@@ -94,22 +106,47 @@ class PexEndpoints:
             async with httpx.AsyncClient() as client:
                 for peer in peers:
                     peer_url = f"http://{peer['ip']}:{peer['port']}/register"
+                    my_peer = await Utils.get_my_peer()
+
                     print(f"Attempting to register with {peer_url}")
                     response = await client.post(
-                        peer_url, json=await Utils.get_my_peer()
+                        url=peer_url,
+                        json=my_peer.dict(),
                     )
 
-                    response_peer_list = PexUtils.filter_peers(response["peer_list"])
+                    # Convert bytes to string and then to a dictionary
+                    response_data = json.loads(response.content.decode("utf-8"))
+                    print(response_data)
 
-                    PexMongo.add_peers(peer_list=response_peer_list)
+                    # TODO: Maybe run some kind of loop to register peers before
+                    # adding them to the database? Infinite loop might happen here
+                    # without some kind of hard limit if the network becomes huge.
+                    # TODO: Run filter on received peer list before adding to peer list
+
+                    # Convert each dict in response_peer_list to an instance of Utils.Peer
+                    response_peer_list = [
+                        Utils.Peer(**peer)
+                        for peer in response_data["content"]["peer_list"]
+                    ]
+
+                    # Filter Peers
+                    response_peer_list = PexUtils.filter_peers(
+                        peer_list=response_peer_list
+                    )
+
+                    # Add Peers to network
+                    await PexMongo.add_peers(peer_list=response_peer_list)
 
                     if response.status_code == 200:
                         print(f"Registered with {peer} successfully.\n")
                     else:
                         print(f"Failed to register with {peer}: {response.text}\n")
+
         except Exception as e:
+            print(traceback.format_exc())
             print(f"Error in registration process: {e}\n")
 
+    # TODO:
     async def update_peer_list():
         """
         Request an updated peer list from a list of peers.
@@ -122,6 +159,7 @@ class PexEndpoints:
         """
         pass
 
+    # TODO:
     @staticmethod
     async def health_checks():
         """
@@ -139,11 +177,14 @@ class PexEndpoints:
 
 
 class PexUtils:
+    # TODO:
     @staticmethod
-    def filter_peers():
+    def filter_peers(peer_list: List[Utils.Peer]):
         """
         takes in a list of peers, removes duplicated peers already found in the peer_list.
 
         removes peers found in the black_list.
+
+        hinges on building out the rate_limitor and the blacklist system in Utils.Peer/PexMongo stuff.
         """
-        pass
+        return peer_list

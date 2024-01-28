@@ -67,13 +67,12 @@ class Utils:
 
     @staticmethod
     async def get_my_peer():
-        peer_info = {}
-
-        peer_info["ip"] = await Utils.get_ip_address()
-        peer_info["port"] = os.getenv("BACKEND_PORT")
-        peer_info["name"] = os.getenv("PEER_NAME")
-
-        return peer_info
+        peer_info = {
+            "ip": await Utils.get_ip_address(),
+            "port": os.getenv("BACKEND_PORT"),
+            "name": os.getenv("PEER_NAME"),
+        }
+        return Utils.Peer(**peer_info)
 
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
@@ -123,7 +122,9 @@ class Utils:
                 }
             ],
         )
-        _active_tag: bool  # Used to identifiy if the peer has hit the /register endpoint
+        _activated: bool  # Used to identifiy if the peer has hit our /register endpoint
+        _registered: bool  # Used to identify if we have registered with this peer successfully (continously updated)
+        _white_listed: bool # Used to allow this peer to have elivated rate limit request privileges (if allowed by user)
         _black_listed: bool  # Used to determine if the user has been blacklisted
         _rate_limited: str  # TODO: Maybe some date in the future until not ratelimited? idk how we should do this. Maybe set this value when the peer is rate limited, and the next time it makes a request read this value and compare to current time. Refuse if not current time, and add more time to this value.
         _complies_with_network_standards: bool = Field(default=True)
@@ -203,6 +204,11 @@ class Utils:
                 if not re.match(r"^[A-Za-z0-9\s-]+$", v):
                     raise ValueError("Name contains invalid characters")
             return v
+
+    # TODO: Add a "PeerList" model class that defines the standard peer list.
+    # And make it so that the current peer, on startup, adds itself to the peer_list
+    # so that we don't have to worry about that logic, it's just automatically
+    # added to the peer requesting to register/update their peer list.
 
     class PublicPeerResponse:
         """
