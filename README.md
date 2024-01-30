@@ -132,3 +132,6 @@ Build out three systems to demo proof of concepts and to setup a testing environ
 # Temp bug with docker compose watch:
 
 You'll have to delete the file generated in `C:\Users\<username>\AppData\Local\docker-compose` to prevent an issue with docker version 24.0.7: https://github.com/docker/compose/issues/11066
+
+
+For consensus or security measures, we could seed the model output to all servers running the models, randomely for normal output/generation, then when we do a sort of security audit or legitimacy audit, we could generate out a static seed to test on mutliple nodes running the model, that way we can verify if the output of a given layer is legitimate if it differentiates from a another nodes output running the same model.
