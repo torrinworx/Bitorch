@@ -6,9 +6,10 @@ import sys
 import json
 import socket
 from bson import ObjectId
-from typing import Optional, List, Dict, Any
+from datetime import datetime
 from ipaddress import ip_address, IPv4Address, IPv6Address
-from pydantic import BaseModel, Field, validator, Extra, root_validator
+from pydantic import BaseModel, Field, validator, root_validator
+from typing import Optional, List, Dict, Any, Union, Iterable, TypeVar
 
 import httpx
 from fastapi.routing import APIRoute
@@ -72,7 +73,7 @@ class Utils:
             "port": os.getenv("BACKEND_PORT"),
             "name": os.getenv("PEER_NAME"),
         }
-        return Utils.Peer(**peer_info)
+        return Peer.Public(**peer_info)
 
     env = os.getenv("ENV", "development").lower()
     config = load_config.__func__()
@@ -85,19 +86,21 @@ class Utils:
                 return str(o)
             return json.JSONEncoder.default(self, o)
 
-    class RequestInfo(BaseModel):
-        timestamp: str
-        request_type: str
-        endpoint: str
-        response_code: str
+    class BitorchAPIRoute(APIRoute):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
 
-    class Peer(BaseModel):
+            # Add any custom logic here before passing control to the default APIRoute
+            # For example, check the request headers, modify the request, etc.
+
+    router = APIRouter(route_class=BitorchAPIRoute)
+
+
+class Peer:
+    class Public(BaseModel):
         """
-        Represents a peer in a network, encapsulating necessary details such as IP address, port, name, etc.
-        This class serves as a critical checkpoint for data validation and security. Given that the data can originate
-        from external sources, rigorous validation is applied to each field to ensure integrity and security before
-        storage in MongoDB. The class employs strict data type enforcement, pattern matching, and range checking
-        to mitigate risks such as injection attacks, data corruption, or unauthorized access attempts.
+        Designed to be the public interface with the Peer object. Use cases include:
+        - The input parameter for endpoints needing to identify my peer and other peers through peer_list and so on in fastapi endpoints/httpx calls
 
         IMPORTANT:
 
@@ -109,41 +112,6 @@ class Utils:
         ip: str = Field(..., example="127.0.0.1", max_length=45)
         port: Optional[int] = Field(None, gt=1023, lt=65536, example=8080)
         name: Optional[str] = Field(None, max_length=100)
-
-        # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
-        _last_seen: str = Field(None, extra=Extra.ignore)
-        _request_history: List["Utils.RequestInfo"] = Field(
-            [],
-            example=[
-                {
-                    "timestamp": "2024-01-19T12:34:56",
-                    "request_type": "GET",
-                    "response_code": "200",
-                }
-            ],
-        )
-        _activated: bool  # Used to identifiy if the peer has hit our /register endpoint
-        _registered: bool  # Used to identify if we have registered with this peer successfully (continously updated)
-        _white_listed: bool # Used to allow this peer to have elivated rate limit request privileges (if allowed by user)
-        _black_listed: bool  # Used to determine if the user has been blacklisted
-        _rate_limited: str  # TODO: Maybe some date in the future until not ratelimited? idk how we should do this. Maybe set this value when the peer is rate limited, and the next time it makes a request read this value and compare to current time. Refuse if not current time, and add more time to this value.
-        _complies_with_network_standards: bool = Field(default=True)
-
-        @root_validator(pre=True)
-        def check_network_standards(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            """
-            Validates the Peer instance to check if it complies with network standards.
-
-            Specifically, it checks if both 'port' and 'name' are None. If so, it sets the
-            '_complies_with_network_standards' flag to True, indicating that the Peer instance
-            is compliant with the network standards where no 'port' and 'name' are required.
-
-            :param values: The dictionary of field values to validate.
-            :return: The modified dictionary of field values.
-            """
-            port, name = values.get("port"), values.get("name")
-            values["_complies_with_network_standards"] = port is None and name is None
-            return values
 
         @validator("ip")
         def validate_ip(cls, v: str) -> str:
@@ -205,76 +173,86 @@ class Utils:
                     raise ValueError("Name contains invalid characters")
             return v
 
-    # TODO: Add a "PeerList" model class that defines the standard peer list.
-    # And make it so that the current peer, on startup, adds itself to the peer_list
-    # so that we don't have to worry about that logic, it's just automatically
-    # added to the peer requesting to register/update their peer list.
-
-    class PublicPeerResponse:
+    class Internal(Public):
         """
-        Returns a public-facing representation of the data.
+        NOTE: For internal use only, meant to be a supper set of Public Peer, including all info from that but hidden and not used
+        for defining parameters of a fastapi api endpoint. "Internal" meaning used internally throughout the server in multiple files
+        and methods, not meant to be publicly exposed to the peer network.
 
-        Example usage in /backend/pex/register.py:
-
-        from utils.utils import Utils
-
-        @router.post(
-            "/register",
-            tags=["Peer Exchange"],
-            summary="Register a new peer",
-            description="Accepts peer registration requests and adds them to the peer list.",
-        )
-        async def register_peer_endpoint(peer: Utils.Peer) -> Dict[str, Any]:
-            try:
-                added = await PexMongo.add_peer(peer=copy.deepcopy(peer))
-                if not added:
-                    raise HTTPException(status_code=400, detail="Peer already registered.")
-
-                return {
-                    "content": {
-                        "peer": Utils.PublicPeerResponse.to_public(peer)
-                    },
-                    "status_code": 200,
-                }
-            except Exception as e:
-                print(traceback.format_exc())
-                raise HTTPException(status_code=500, detail=str(e))
+        Represents a peer in a network, encapsulating necessary details such as IP address, port, name, etc.
+        This class serves as a critical checkpoint for data validation and security. Given that the data can originate
+        from external sources, rigorous validation is applied to each field to ensure integrity and security before
+        storage in MongoDB. The class employs strict data type enforcement, pattern matching, and range checking
+        to mitigate risks such as injection attacks, data corruption, or unauthorized access attempts.
         """
 
-        @staticmethod
-        def _filter_peer_data(data):
-            """
-            Filters a single Peer instance to include only public-facing fields.
-            """
-            public_fields = {"ip", "port", "name"}
-            return {field: getattr(data, field) for field in public_fields}
+        # Internal fields (NOTE: DO NOT EXPOSE TO PUBLIC ENDPOINTS):
+        last_seen: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+        request_history: List["Peer.RequestInfo"] = Field(default_factory=list)
+        activated: bool = False # Used to identifiy if the peer has hit our /register endpoint
+        registered: bool = False # Used to identify if we have registered with this peer successfully (continously updated)
+        white_listed: bool = False # Used to allow this peer to have elivated rate limit request privileges (if allowed by user)
+        black_listed: bool = False # Used to determine if the user has been blacklisted
+        rate_limited: str = "" # TODO: Maybe some date in the future until not ratelimited? idk how we should do this. Maybe set this value when the peer is rate limited, and the next time it makes a request read this value and compare to current time. Refuse if not current time, and add more time to this value.
+        complies_with_network_standards: bool = Field(default=True)
 
-        @staticmethod
-        def to_public(data):
+        @root_validator(pre=True)
+        def check_network_standards(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             """
-            Handles single Peer instances, lists, tuples, sets, nested structures, and dictionaries.
-            Throws an error if the data is part of an unknown data structure to prevent internal
-            fields from being exposed.
+            Validates the Peer instance to check if it complies with network standards.
+
+            Specifically, it checks if both 'port' and 'name' are None. If so, it sets the
+            'complies_with_network_standards' flag to True, indicating that the Peer instance
+            is compliant with the network standards where no 'port' and 'name' are required.
+
+            :param values: The dictionary of field values to validate.
+            :return: The modified dictionary of field values.
             """
-            if isinstance(data, Utils.Peer):
-                return Utils.PublicPeerResponse._filter_peer_data(data)
-            elif isinstance(data, dict):
-                return {
-                    key: Utils.PublicPeerResponse.to_public(value)
-                    for key, value in data.items()
-                }
-            elif isinstance(data, (list, tuple, set)):
-                return type(data)(
-                    Utils.PublicPeerResponse.to_public(item) for item in data
-                )
-            else:
-                raise TypeError(f"Unsupported data structure: {type(data).__name__}")
+            port, name = values.get("port"), values.get("name")
+            values["complies_with_network_standards"] = port is None and name is None
+            return values
 
-    class BitorchAPIRoute(APIRoute):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+        def to_public(self):
+            """
+            Creates a Public instance from the Internal instance by
+            extracting all fields that are present in the Public definition.
+            """
+            # Get field names defined in Public
+            public_fields = set(
+                self.__fields_set__.intersection(Peer.Public.__fields__.keys())
+            )
+            # Create dict with only the public fields
+            public_attrs = {field: getattr(self, field) for field in public_fields}
+            # Return a Public instance with those fields
+            return Peer.Public(**public_attrs)
 
-            # Add any custom logic here before passing control to the default APIRoute
-            # For example, check the request headers, modify the request, etc.
+    class RequestInfo(BaseModel):
+        timestamp: str
+        request_type: str
+        endpoint: str
+        response_code: str
 
-    router = APIRouter(route_class=BitorchAPIRoute)
+    T = TypeVar("T", bound=Union[Iterable[Any], Dict[str, Any]])
+    @staticmethod
+    def to_public(data: Union[T, "Peer.Public", "Peer.Internal"]) -> T:
+        """
+        Converts Peer.Internal instances to their public representation, and passes
+        Peer.Public instances directly. For iterables and dictionaries, it applies conversion recursively.
+        """
+        if isinstance(data, Peer.Internal):
+            return data.to_public()
+        elif isinstance(data, Peer.Public):
+            # Public instances are returned without modification
+            return data
+        elif isinstance(data, dict):
+            return {key: Peer.to_public(value) for key, value in data.items()}
+        elif isinstance(data, (list, tuple, set)):
+            public_data_type = type(
+                data
+            )  # maintain the type of the iterable (list, tuple, set)
+            return public_data_type(Peer.to_public(item) for item in data)
+        else:
+            raise TypeError(f"Unsupported data type: {type(data).__name__}")
+
+
+Peer.Internal.update_forward_refs()

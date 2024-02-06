@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 
 
-from utils.utils import Utils
+from utils.utils import Peer
 from utils.mongo import MongoDBManager
 
 collection_name = "peers"
@@ -12,7 +12,7 @@ collection_name = "peers"
 
 class PexMongo:
     async def __init__(self):
-        # await PexMongo.create_collection(collection_name=collection_name) Check if collection exists and create it if not. 
+        # await PexMongo.create_collection(collection_name=collection_name) Check if collection exists and create it if not.
         pass
 
     @staticmethod
@@ -29,7 +29,7 @@ class PexMongo:
         return data
 
     @staticmethod
-    async def add_peers(peer_list: List[Utils.Peer]) -> bool:
+    async def add_peers(peer_list: List[Peer.Internal]) -> bool:
         """
         Serialize MongoDB data by converting ObjectId to string.
         """
@@ -46,7 +46,7 @@ class PexMongo:
         return success
 
     @staticmethod
-    async def add_peer(peer: Utils.Peer) -> str:
+    async def add_peer(peer: Peer.Internal) -> str:
         """
         Add a new peer to the database or update it if it already exists.
         Check if a peer with the same IP address exists, and update its details if other fields have changed.
@@ -65,7 +65,7 @@ class PexMongo:
             return "New peer added"
 
     @staticmethod
-    async def get_all_peers() -> List[Utils.Peer]:
+    async def get_all_peers() -> List[Peer.Internal]:
         """
         Retrieve all peers from the database and remove the '_id' field.
         """
@@ -74,11 +74,12 @@ class PexMongo:
         result = []
         for peer_dict in peers:
             peer_dict.pop("_id", None)
-            result.append(Utils.Peer(**peer_dict))
+            print(peer_dict)
+            result.append(Peer.Internal(**peer_dict))
         return result
 
     @staticmethod
-    async def remove_peer(peer: Utils.Peer) -> bool:
+    async def remove_peer(peer: Peer.Internal) -> bool:
         """
         Remove a peer from the database.
         """
@@ -87,8 +88,8 @@ class PexMongo:
 
     @staticmethod
     async def update_peer(
-        old_peer: Utils.Peer, new_peer: Utils.Peer
-    ) -> Optional[Utils.Peer]:
+        old_peer: Peer.Internal, new_peer: Peer.Internal
+    ) -> Optional[Peer.Internal]:
         """
         Update a peer's info.
         """
@@ -100,18 +101,18 @@ class PexMongo:
         return new_peer if result else None
 
     @staticmethod
-    async def get_peer(ip: str) -> Optional[Utils.Peer]:
+    async def get_peer(ip: str) -> Optional[Peer.Internal]:
         """
         Get an individual peer by their IP address.
         """
         peer_dict = await MongoDBManager().find_documents(collection_name, {"ip": ip})
         if peer_dict:
-            return Utils.Peer(**peer_dict[0])
+            return Peer.Internal(**peer_dict[0])
         return None
 
     @staticmethod
     async def update_peer_request_history(
-        client_ip: str, request_info: Utils.RequestInfo
+        client_ip: str, request_info: Peer.RequestInfo
     ) -> bool:
         """
         Append a new request record to the peer's request history and update the 'last seen' timestamp.
@@ -125,7 +126,7 @@ class PexMongo:
 
         if not peer_exists:
             # If the peer doesn't exist, create a new peer and add the request history
-            new_peer = Utils.Peer(
+            new_peer = Peer.Internal(
                 ip=client_ip, request_history=[request_info], _last_seen=current_time
             )
             await MongoDBManager().insert_document(collection_name, new_peer.dict())
@@ -136,8 +137,8 @@ class PexMongo:
                 collection_name,
                 {"ip": client_ip},
                 {
-                    "$push": {"_request_history": request_info.dict()},
-                    "$set": {"_last_seen": current_time},
+                    "$push": {"request_history": request_info.dict()},
+                    "$set": {"last_seen": current_time},
                 },
             )
 

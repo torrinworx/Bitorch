@@ -5,13 +5,13 @@ from fastapi import Response, Request
 from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from utils.utils import Utils
+from utils.utils import Utils, Peer
 from api.pex.pex_mongo import PexMongo
 
 # TODO: Sanatize request info before logging to db
 
 
-class RequestLoggerMiddleware(BaseHTTPMiddleware):
+class IncomingRequestLoggerMiddleware(BaseHTTPMiddleware):
     """
     Middleware for logging request and response information using PexMongo for analytics and monitoring of peers
     on the network making requests.
@@ -59,7 +59,7 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
         - response (Response): The outgoing response.
         """
 
-        request_info = Utils.RequestInfo(
+        request_info = Peer.RequestInfo(
             timestamp=datetime.utcnow().isoformat(),
             request_type=request.method,
             endpoint=str(request.url),
