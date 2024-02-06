@@ -19,15 +19,24 @@ class Scheduler:
         self.sched.shutdown()
 
     def schedule_task(self, *args, **kwargs):
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(*func_args, **func_kwargs):
-                return await func(*func_args, **func_kwargs)
+            def decorator(func):
+                @wraps(func)
+                async def wrapper(*func_args, **func_kwargs):
+                    return await func(*func_args, **func_kwargs)
 
-            self.sched.add_job(wrapper, *args, **kwargs)
-            return wrapper
+                # Check if a job with the given ID already exists
+                try:
+                    existing_job = self.sched.get_job(kwargs.get('id'))
+                    if existing_job:
+                        # Handle the existing job (e.g., remove it, log a warning, etc.)
+                        self.remove_task(existing_job.id)
+                except Exception as e:
+                    print(f"Error checking for existing task: {e}")
 
-        return decorator
+                self.sched.add_job(wrapper, *args, **kwargs)
+                return wrapper
+
+            return decorator
 
     def remove_task(self, task_id):
         try:
