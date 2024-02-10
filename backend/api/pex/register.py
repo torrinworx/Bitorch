@@ -28,7 +28,6 @@ async def register_peer_endpoint(peer: Peer.Public) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
         peer_list = await PexMongo.get_all_peers()
-        print("PEER LIST:", peer_list[0].to_public())
         return {
             "content": {
                 "peer": Peer.to_public(peer),

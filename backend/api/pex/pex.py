@@ -1,6 +1,6 @@
-import json
+import os
 import traceback
-from typing import List
+from typing import List, Tuple
 
 import httpx
 
@@ -41,7 +41,8 @@ class PexTasks:
         if Utils.env == "development" and my_peer.name == "peer0":
             return  # No registration needed because we are the source peer
 
-        await PexEndpoints.register_peers(peers=Utils.get_source_peers())
+        peers = Utils.get_source_peers()
+        await PexEndpoints.register_peers(peers=peers)
 
     @scheduler.schedule_task(
         trigger="interval", seconds=10, id="peer_list_monitor"
@@ -80,89 +81,75 @@ class PexTasks:
         from datetime import datetime, timedelta
         my_peer_list = await PexMongo.get_all_peers()
         current_time = datetime.now()
-        five_minutes_ago = current_time - timedelta(minutes=5)
-        ten_minutes_ago = current_time - timedelta(minutes=10)
+        five_minutes_ago = current_time - timedelta(seconds=1)
+        ten_minutes_ago = current_time - timedelta(seconds=2)
         for peer in my_peer_list:
             peer_last_seen = datetime.fromisoformat(peer.last_seen)
             if ten_minutes_ago > peer_last_seen:
                 # Health check
                 alive = await PexEndpoints.health_check(peer)
                 if not alive:
-                    # Mark the peer as dead in the database
-                    # ... Update code to handle marking the peer as dead
+                    # TODO: handle marking the peer as dead in the database, shouldn't delete it, but just mark it dead and filter it out.
                     pass 
 
             elif five_minutes_ago < peer_last_seen < ten_minutes_ago:
-                # # Update peer list
-                # response = await PexEndpoints.update_peer_list(my_peer_list)
-                # response_peer_list = response.peer_list
-                # # Filter out duplicates and blacklisted peers
-                # filtered_peer_list = PexUtils.filter_peers(response_peer_list)
-                # await PexEndpoints.register_peers(filtered_peer_list)
-                pass
-
-            # TODO: Implement the utils.update_last_seen(peer) function
+                await PexEndpoints.register_peers([peer])
 
 class PexEndpoints:
     @staticmethod
-    async def register_peers(peers: list):
+    async def register_peers(peers: List[Peer.Internal]):
         """
         Request registration from a list of peers in the network. Adds current peer to their
-        peer_list and receives peer_list truncated from them.
+        peer_list and receives a truncated peer_list from them.
 
-        This method corresponds to the /backend/api/pex/register.py endpoint.
-        It attempts to register the current peer with each source peer in the `peers` list
-        by sending a POST request to each.
-
-        TODO: Design this as a simple two birds with one stone endpoint;
-        register with a peer, peer returns random selection of peer_list capped at some value.
+        This method attempts to register the current peer with each peer in the `peers` list
+        by sending a POST request.
 
         Parameters:
-        peers (list): A list of dicitonaries, each containing information about a peer.
+        - peers (List[Peer.Internal]): A list of Peer.Internal instances representing the peers.
+
+        Returns:
+        - None
         """
-        try:
-            async with httpx.AsyncClient() as client:
-                for peer in peers:
-                    peer_url = f"http://{peer['ip']}:{peer['port']}/register"
+        # Retrieve the current recursion depth and the limit flag
+        depth, limit_reached = await PexUtils.get_depth()
+
+        if limit_reached:
+            print(f"Recursion depth limit reached, currently at depth {depth}. Stopping further registrations.")
+            return
+
+        async with httpx.AsyncClient() as client:
+            for peer in peers:
+                try:
+                    peer_url = f"http://{peer.ip}:{peer.port}/register"
                     my_peer = await Utils.get_my_peer()
 
-                    print(f"Attempting to register with {peer_url}")
-                    response = await client.post(
-                        url=peer_url,
-                        json=my_peer.dict(),
-                    )
+                    print(f"Attempting to register with peer at {peer_url}")
+                    response = await client.post(peer_url, json=my_peer.dict())
+                    response.raise_for_status()  # Raises an exception for HTTP error responses
 
-                    # Convert bytes to string and then to a dictionary
-                    response_data = json.loads(response.content.decode("utf-8"))
-                    print(response_data)
+                    response_data = response.json()
+                    print(f"Registered with {peer.ip} successfully.")
 
-                    # TODO: Maybe run some kind of loop to register peers before
-                    # adding them to the database? Infinite loop might happen here
-                    # without some kind of hard limit if the network becomes huge.
-                    # TODO: Run filter on received peer list before adding to peer list
-
-                    # Convert each dict in response_peer_list to an instance of Utils.Peer
-                    response_peer_list = [
-                        Peer.Internal(**peer)
-                        for peer in response_data["content"]["peer_list"]
+                    # Obtain the peer list provided by the peer we've just registered with
+                    new_peer_list = [
+                        Peer.Internal(**p_data)
+                        for p_data in response_data["content"].get("peer_list", [])
                     ]
 
-                    # Filter Peers
-                    response_peer_list = PexUtils.filter_peers(
-                        peer_list=response_peer_list
-                    )
+                    # Filter to exclude peers that are already known or not compliant
+                    filtered_new_peers = await PexUtils.filter_peers_registered(new_peer_list)
 
-                    # Add Peers to network
-                    await PexMongo.add_peers(peer_list=response_peer_list)
+                    # Add peers to db
+                    await PexMongo.add_peers(filtered_new_peers)
 
-                    if response.status_code == 200:
-                        print(f"Registered with {peer} successfully.\n")
-                    else:
-                        print(f"Failed to register with {peer}: {response.text}\n")
+                    # Make a recursive call to continue the registration process
+                    if not limit_reached:
+                        await PexEndpoints.register_peers(filtered_new_peers)
 
-        except Exception as e:
-            print(traceback.format_exc())
-            print(f"Error in registration process: {e}\n")
+                except Exception as e:
+                    print(f"Failed to register with {peer.ip}: {str(e)}")
+                    traceback.print_exc()
 
     # TODO:
     @staticmethod
@@ -196,14 +183,71 @@ class PexEndpoints:
 
 
 class PexUtils:
-    # TODO:
     @staticmethod
-    def filter_peers(peer_list: List[Peer.Internal]):
+    async def filter_peers_registered(peer_list: List[Peer.Internal]) -> List[Peer.Internal]:
         """
-        takes in a list of peers, removes duplicated peers already found in the peer_list.
+        Filters a given list of Peer.Internal instances, removing peers that are already registered.
 
-        removes peers found in the black_list.
+        This function is designed to prevent duplicate registrations by checking the input list of peers
+        against the current list of registered peers obtained from the database. It ensures that only
+        peers not currently registered are retained. Additionally, this function is designed to remove
+        peers that are blacklisted, although this functionality is pending future implementation.
 
-        hinges on building out the rate_limitor and the blacklist system in Utils.Peer/PexMongo stuff.
+        Peers are uniquely identified by their IP addresses, and the filtering is done on this basis.
+
+        Parameters:
+        - peer_list (List[Peer.Internal]): A list of Peer.Internal instances to be filtered.
+
+        Returns:
+        - List[Peer.Internal]: A list of Peer.Internal instances that are not already registered.
+
+        TODO:
+        - Implement filtering based on a blacklist of peers.
+        - Integrate with rate limiter and blacklist systems in Utils.Peer/PexMongo.
+
+        Note:
+        - This function assumes that each peer has a unique IP address for identification purposes.
+        - The implementation of blacklist filtering is pending. The current version does not filter
+        out blacklisted peers.
         """
-        return peer_list
+        my_peer_list = await PexMongo.get_all_peers()
+
+        # Create a set of IPs from my_peer_list for quick lookup
+        known_ips = {peer.ip for peer in my_peer_list}
+
+        # Filter out any peers that are already in my_peer_list
+        return [peer for peer in peer_list if peer.ip not in known_ips]
+
+    @staticmethod
+    async def get_depth() -> Tuple[int, bool]:
+        """
+        Calculates the recursion depth for peer registration based on the number of peers
+        in the peer list. If the number of peers is greater than or equal to the value
+        specified in the 'MAX_DEPTH' environment variable, that value is used as the depth.
+        Otherwise, the depth is set to the length of the peer list.
+
+        Returns:
+        - Tuple[int, bool]: A tuple containing the calculated recursion depth and a boolean
+                            indicating whether the recursion limit has been reached.
+        """
+
+        # Assign a default max_depth if the environment variable is not set or not an integer
+        default_max_depth = 100  # A sensible default value
+        try:
+            max_depth = int(os.getenv("MAX_DEPTH", default_max_depth))
+        except ValueError:
+            max_depth = default_max_depth  # Fallback to default if conversion fails
+
+        # Get the current list of peers from the database
+        peer_list = await PexMongo.get_all_peers()
+
+        # Calculate the current depth based on the size of the peer list
+        current_depth = len(peer_list)
+
+        # Determine if the recursion depth limit has been reached
+        limit_reached = current_depth >= max_depth
+
+        # If the limit has been reached, use the max_depth as the depth
+        depth = max_depth if limit_reached else current_depth
+
+        return depth, limit_reached

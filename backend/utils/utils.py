@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field, validator, root_validator
 from typing import Optional, List, Dict, Any, Union, Iterable, TypeVar
 
 import httpx
-from fastapi.routing import APIRoute
 from fastapi import APIRouter
+from fastapi.routing import APIRoute
 
 
 class Utils:
@@ -53,7 +53,19 @@ class Utils:
             return socket.gethostbyname(hostname)
 
     @staticmethod
-    def get_source_peers():
+    def get_source_peers() -> List["Peer.Internal"]:
+        """
+        Retrieves a list of source peers from the configuration file.
+
+        This function reads the list of peers from a specified section based on the environment,
+        converts each peer dictionary into a Peer.Internal instance, and returns them as a list.
+
+        Returns:
+        - List[Peer.Internal]: A list of Peer.Internal instances representing the source peers.
+
+        Raises:
+        - ValueError: If the specified environment section is not found in the configuration.
+        """
         # Load the entire configuration
         config_dict = Utils.load_config()
 
@@ -62,12 +74,21 @@ class Utils:
 
         # Extract source peers for the specified environment
         if section in config_dict:
-            return config_dict[section]
+            # Convert each dictionary entry into a Peer.Internal instance
+            return [
+                Peer.Internal(**peer_data)
+                for peer_data in config_dict[section]
+            ]
         else:
             raise ValueError(f"Section '{section}' not found in .config.json.")
 
     @staticmethod
     async def get_my_peer():
+        """
+        My peer is treated as an Peer.Public because we don't need to keep track of internal stats
+        for our peer.
+        """
+
         peer_info = {
             "ip": await Utils.get_ip_address(),
             "port": os.getenv("BACKEND_PORT"),
