@@ -74,7 +74,6 @@ class PexMongo:
         result = []
         for peer_dict in peers:
             peer_dict.pop("_id", None)
-            print(peer_dict)
             result.append(Peer.Internal(**peer_dict))
         return result
 

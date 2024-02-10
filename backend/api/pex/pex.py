@@ -4,9 +4,9 @@ from typing import List
 
 import httpx
 
-from utils.utils import Utils
+from utils.utils import Utils, Peer
 from .pex_mongo import PexMongo
-
+from utils.scheduler import scheduler
 
 class PexTasks:
     @staticmethod
@@ -41,12 +41,11 @@ class PexTasks:
         if Utils.env == "development" and my_peer.name == "peer0":
             return  # No registration needed because we are the source peer
 
-        source_peers = await Utils.get_source_peers()
-        await PexEndpoints.register_peers(peers=source_peers)
+        await PexEndpoints.register_peers(peers=Utils.get_source_peers())
 
-    # @scheduler.schedule_task(
-    #     trigger="interval", seconds=5, id="peer_list_monitor"
-    # )
+    @scheduler.schedule_task(
+        trigger="interval", seconds=10, id="peer_list_monitor"
+    )
     @staticmethod
     async def peer_list_monitor():
         """
@@ -78,12 +77,31 @@ class PexTasks:
         TODO: Create universal utils.update_last_seen(peer) function that
         updates the last time a peer was seen in the network.
         """
-        # TODO from above:
-        peer_list = PexMongo.get_all_peers()
+        from datetime import datetime, timedelta
+        my_peer_list = await PexMongo.get_all_peers()
+        current_time = datetime.now()
+        five_minutes_ago = current_time - timedelta(minutes=5)
+        ten_minutes_ago = current_time - timedelta(minutes=10)
+        for peer in my_peer_list:
+            peer_last_seen = datetime.fromisoformat(peer.last_seen)
+            if ten_minutes_ago > peer_last_seen:
+                # Health check
+                alive = await PexEndpoints.health_check(peer)
+                if not alive:
+                    # Mark the peer as dead in the database
+                    # ... Update code to handle marking the peer as dead
+                    pass 
 
-        for peer in peer_list:
-            pass
+            elif five_minutes_ago < peer_last_seen < ten_minutes_ago:
+                # # Update peer list
+                # response = await PexEndpoints.update_peer_list(my_peer_list)
+                # response_peer_list = response.peer_list
+                # # Filter out duplicates and blacklisted peers
+                # filtered_peer_list = PexUtils.filter_peers(response_peer_list)
+                # await PexEndpoints.register_peers(filtered_peer_list)
+                pass
 
+            # TODO: Implement the utils.update_last_seen(peer) function
 
 class PexEndpoints:
     @staticmethod
@@ -125,7 +143,7 @@ class PexEndpoints:
 
                     # Convert each dict in response_peer_list to an instance of Utils.Peer
                     response_peer_list = [
-                        Utils.Peer(**peer)
+                        Peer.Internal(**peer)
                         for peer in response_data["content"]["peer_list"]
                     ]
 
@@ -147,6 +165,7 @@ class PexEndpoints:
             print(f"Error in registration process: {e}\n")
 
     # TODO:
+    @staticmethod
     async def update_peer_list():
         """
         Request an updated peer list from a list of peers.
@@ -161,7 +180,7 @@ class PexEndpoints:
 
     # TODO:
     @staticmethod
-    async def health_checks():
+    async def health_check():
         """
         Sends health checks to a list of peers in the network.
 
@@ -179,7 +198,7 @@ class PexEndpoints:
 class PexUtils:
     # TODO:
     @staticmethod
-    def filter_peers(peer_list: List[Utils.Peer]):
+    def filter_peers(peer_list: List[Peer.Internal]):
         """
         takes in a list of peers, removes duplicated peers already found in the peer_list.
 

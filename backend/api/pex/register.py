@@ -21,6 +21,8 @@ router = Utils.router
 )
 async def register_peer_endpoint(peer: Peer.Public) -> Dict[str, Any]:
     try:
+        # First step in any endpoint, convert public to private peer, might want to convert this into a middleware to automatically do this in the future somehow:
+        peer = Peer.Internal(peer)
         added = await PexMongo.add_peer(peer=copy.deepcopy(peer))
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")

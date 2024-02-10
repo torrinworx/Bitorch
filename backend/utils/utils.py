@@ -53,7 +53,7 @@ class Utils:
             return socket.gethostbyname(hostname)
 
     @staticmethod
-    async def get_source_peers():
+    def get_source_peers():
         # Load the entire configuration
         config_dict = Utils.load_config()
 
@@ -254,5 +254,12 @@ class Peer:
         else:
             raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
+    @classmethod
+    def to_internal(cls, public_peer: 'Peer.Public') -> 'Peer.Internal':
+        """
+        Converts a Public Peer instance to an Internal Peer instance.
+        Missing internal attributes will be initialized with their defaults.
+        """
+        return cls.Internal(**public_peer.dict())
 
 Peer.Internal.update_forward_refs()
