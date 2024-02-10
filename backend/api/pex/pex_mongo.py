@@ -6,15 +6,11 @@ from typing import List, Optional
 from utils.utils import Peer
 from utils.mongo import MongoDBManager
 
-collection_name = "peers"
+peers_collection = "peers"
 
 # TODO: Add better error handling
 
 class PexMongo:
-    async def __init__(self):
-        # await PexMongo.create_collection(collection_name=collection_name) Check if collection exists and create it if not.
-        pass
-
     @staticmethod
     def serialize(data):
         """
@@ -37,10 +33,10 @@ class PexMongo:
         for peer_model in peer_list:
             peer_dict = peer_model.dict()
             peer_exists = await MongoDBManager().find_documents(
-                collection_name, peer_dict
+                peers_collection, peer_dict
             )
             if not peer_exists:
-                await MongoDBManager().insert_document(collection_name, peer_dict)
+                await MongoDBManager().insert_document(peers_collection, peer_dict)
             else:
                 success = False
         return success
@@ -53,15 +49,15 @@ class PexMongo:
         """
         peer_dict = peer.dict()
         existing_peer = await MongoDBManager().find_documents(
-            collection_name, {"ip": peer_dict["ip"]}
+            peers_collection, {"ip": peer_dict["ip"]}
         )
         if existing_peer:
             await MongoDBManager().update_document(
-                collection_name, {"ip": peer_dict["ip"]}, peer_dict
+                peers_collection, {"ip": peer_dict["ip"]}, peer_dict
             )
             return "Peer updated"
         else:
-            await MongoDBManager().insert_document(collection_name, peer_dict)
+            await MongoDBManager().insert_document(peers_collection, peer_dict)
             return "New peer added"
 
     @staticmethod
@@ -69,8 +65,7 @@ class PexMongo:
         """
         Retrieve all peers from the database and remove the '_id' field.
         """
-        # TODO: filter peers that removes duplicate peers or peers on the black_list.
-        peers = await MongoDBManager().find_documents(collection_name, {})
+        peers = await MongoDBManager().find_documents(peers_collection, {})
         result = []
         for peer_dict in peers:
             peer_dict.pop("_id", None)
@@ -83,7 +78,7 @@ class PexMongo:
         Remove a peer from the database.
         """
         peer_dict = peer.dict()
-        return await MongoDBManager().delete_document(collection_name, peer_dict)
+        return await MongoDBManager().delete_document(peers_collection, peer_dict)
 
     @staticmethod
     async def update_peer(
@@ -93,7 +88,7 @@ class PexMongo:
         Update a peer's info.
         """
         result = await MongoDBManager().update_document(
-            collection_name=collection_name,
+            collection_name=peers_collection,
             query=old_peer.dict(),
             update=new_peer.dict(),
         )
@@ -104,7 +99,7 @@ class PexMongo:
         """
         Get an individual peer by their IP address.
         """
-        peer_dict = await MongoDBManager().find_documents(collection_name, {"ip": ip})
+        peer_dict = await MongoDBManager().find_documents(peers_collection, {"ip": ip})
         if peer_dict:
             return Peer.Internal(**peer_dict[0])
         return None
@@ -121,19 +116,19 @@ class PexMongo:
         update_result = False
 
         peer_dict = {"ip": client_ip}
-        peer_exists = await MongoDBManager().find_documents(collection_name, peer_dict)
+        peer_exists = await MongoDBManager().find_documents(peers_collection, peer_dict)
 
         if not peer_exists:
             # If the peer doesn't exist, create a new peer and add the request history
             new_peer = Peer.Internal(
-                ip=client_ip, request_history=[request_info], _last_seen=current_time
+                ip=client_ip, request_history=[request_info], last_seen=current_time
             )
-            await MongoDBManager().insert_document(collection_name, new_peer.dict())
+            await MongoDBManager().insert_document(peers_collection, new_peer.dict())
             update_result = True
         else:
             # If the peer exists, update the request history and 'last seen' timestamp
             update_result = await MongoDBManager().update_document(
-                collection_name,
+                peers_collection,
                 {"ip": client_ip},
                 {
                     "$push": {"request_history": request_info.dict()},
