@@ -15,6 +15,8 @@ Generally there are two approaches:
 
 Ideally we would use the "Model Parallelism" method as it allows for more flexibility in terms of the hardware each peer on the network can contribute, allowing smaller peers running smaller chunks of the model. However the way to do this with transformers isn't clear.
 
+However we might be able to settle for the data parallelism method, or perhaps even both in some kind of dynamic system that selects the best method based on the size of the model, and the size of peer resources.
+
 Something like this https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html, found here: https://discuss.huggingface.co/t/how-to-load-large-model-with-multiple-gpu-cards/18522/3
 
 Ideally we would find a method that will allow us to chunk and distribute all transformer models so that this approach is model agnostic so that we can incompass all types of models from text to speech, speech to text, depth estimation, text to image, llms, etc.
