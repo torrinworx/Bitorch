@@ -70,8 +70,6 @@ services:
     depends_on:
       - mongodb
       - peer0
-
-
   mongodb:
     container_name: mongodb
     image: mongo:6.0

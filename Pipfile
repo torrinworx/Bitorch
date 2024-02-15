@@ -15,6 +15,7 @@ schedule = "*"
 pydantic = "==1.10.13"
 apscheduler = {extras = ["mongoengine"], version = "*"}
 docker = "*"
+watchdog = "*"
 
 [dev-packages]
 

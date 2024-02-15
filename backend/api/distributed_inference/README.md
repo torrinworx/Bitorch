@@ -20,3 +20,17 @@ However we might be able to settle for the data parallelism method, or perhaps e
 Something like this https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html, found here: https://discuss.huggingface.co/t/how-to-load-large-model-with-multiple-gpu-cards/18522/3
 
 Ideally we would find a method that will allow us to chunk and distribute all transformer models so that this approach is model agnostic so that we can incompass all types of models from text to speech, speech to text, depth estimation, text to image, llms, etc.
+
+
+So here is the plan to simulate a peer uploading a new model to the network:
+1. New model is loaded into a directory in full.
+2. Model get's split into whatever chunks that it can be using huggingface Accelerate or whatever tools for Transformers.
+3. These chunks, and the full model file, are then available to download from the peer hosting it
+4. Use some kind of a bittorrent protocal to host, download, and seed the model, and model chunks to other nodes (we can skip this for building out the distributed inference and make this later, right now it can just directly download from the peer uploading the model files.)
+5. Each peer that chooses to run the model will download a chunk of it (or for testing it can download the full model.)
+6. We simulate a request, sending needed data to all endpoints running the chunks of the model
+7. The peers running model chunks process the request, sending data to each other through the selected path chosen by the client peer requesting use of the model.
+8. The last peer in the chain sendsd the result back to the client requesting the use of the model.
+
+# First test
+For the first test I don't think it is necissary to chunk and run model parallelism. Right now we should just focus on sending the full model, something like mixtral or sd to each peer on the network, then have them be able to be selected and "host" or run the model for users like an api would.
