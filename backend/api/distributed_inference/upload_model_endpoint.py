@@ -1,0 +1,1 @@
+# NOTE: This is designed to be an internal endpoint used by the user, not in any way exposed to the actually public api.

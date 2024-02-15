@@ -1,0 +1,2 @@
+class DisInfUtils:
+    pass

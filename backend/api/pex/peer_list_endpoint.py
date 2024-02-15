@@ -1,4 +1,5 @@
 # Return peer_list when requested by other peers
+# TODO: Review and delete this? Might not be necissary now that /register sort of acts like an all in one endpoint for pex.
 
 import traceback
 from typing import Dict, Any
