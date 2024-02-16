@@ -18,8 +18,6 @@ class MongoDBManager:
             db_name = os.getenv("DB_NAME")
             self.client = AsyncIOMotorClient(mongo_url)
             self.db = self.client[db_name]
-
-            print("INFO: Connected to MongoDB.")
         except Exception as e:
             print(f"Error connecting to MongoDB: {e}")
             self.client = None
@@ -28,7 +26,6 @@ class MongoDBManager:
     def __del__(self):
         if self.client:
             self.client.close()
-            print("INFO: MongoDB connection closed.")
 
     async def insert_document(self, collection_name: str, document: Dict) -> bool:
         collection = self.db[collection_name]

@@ -59,6 +59,7 @@ async def register_endpoint(peer: Peer.Public) -> Dict[str, Any]:
             "status_code": 200
         }
     """
+    # TODO: Need to implement a check that the ip address the peer is providing is the same one it's requesting from, peers should always provide the valid ip address they are requesting from. if not then the request should be rejected.
     try:
         # First step in any endpoint, convert public to private peer, might want to convert this into a middleware to automatically do this in the future somehow:
         peer_int = Peer.to_internal(peer)

@@ -2,8 +2,8 @@ import os
 import random
 import traceback
 from bson import ObjectId
-from typing import List, Tuple, Optional
 from datetime import datetime, timedelta
+from typing import List, Tuple, Optional, Set
 
 import httpx
 
@@ -25,11 +25,11 @@ class PexTasks:
         It checks if the current peer list is empty and, if so, searches for
         additional peers to connect to for starting network activities.
         """
-        await PexTasks.join_network()
-
         # Add self to peer list:
         my_peer = await Utils.get_my_peer()
         await PexMongo.add_peer(peer=my_peer)
+
+        await PexTasks.join_network()
 
     @staticmethod
     async def join_network():
@@ -86,11 +86,11 @@ class PexTasks:
         for peer in my_peer_list:
             peer_last_seen = datetime.fromisoformat(peer.last_seen)
             if ten_minutes_ago > peer_last_seen:
-                # Perform health check
-                alive = await PexMethods.health_check(peer)
-                if not alive:
-                    # Handle marking the peer as inactive in the database
-                    pass
+                # # Perform health check
+                # alive = await PexMethods.health_check(peer)
+                # if not alive:
+                #     # Handle marking the peer as inactive in the database
+                pass
 
             elif five_minutes_ago < peer_last_seen < ten_minutes_ago:
                 # Attempt to re-register peer to verify if it is still active
@@ -239,22 +239,28 @@ class PexUtils:
         Returns:
         - List[Peer.Internal]: A list of Peer.Internal instances that are not already registered.
 
-        TODO:
-        - Implement filtering based on a blacklist of peers.
-        - Integrate with rate limiter and blacklist systems in Utils.Peer/PexMongo.
-
-        Note:
+        NOTE:
         - This function assumes that each peer has a unique IP address for identification purposes.
-        - The implementation of blacklist filtering is pending. The current version does not filter
-        out blacklisted peers.
         """
         my_peer_list = await PexMongo.get_all_peers()
+        print(my_peer_list)
 
         # Create a set of IPs from my_peer_list for quick lookup
         known_ips = {peer.ip for peer in my_peer_list}
 
         # Filter out any peers that are already in my_peer_list
         return [peer for peer in peer_list if peer.ip not in known_ips]
+    
+    @staticmethod
+    async def filter_bad_peers(
+        peer_list: List[Peer.Internal],
+    ) -> List[Peer.Internal]:
+        """
+        This function should filter out blacklisted and poor quality or not trusted peers to help provide good quality peers for connection for new users.
+        
+        The implementation of blacklist and ratelimiting is pending and this function will be implemented when that system is built.
+        """
+        return peer_list
 
     @staticmethod
     async def get_depth() -> Tuple[int, bool]:
@@ -362,7 +368,7 @@ class PexMongo:
     @staticmethod
     async def get_all_peers() -> List[Peer.Internal]:
         """
-        Retrieve all peers from the database and remove the '_id' field.
+        Retrieve all peers from the database and remove the '_id' field. Results are unfiltered and contain blacklisted peers.
         """
         peers = await MongoDBManager().find_documents(peers_collection, {})
         result = []
@@ -372,25 +378,39 @@ class PexMongo:
         return result
 
     @staticmethod
-    async def get_random_peers() -> List[Peer.Internal]:
+    async def get_random_peers(
+        exclude_peers: Set[Peer.Internal] = None, filter_bad_peers: bool = True
+    ) -> List[Peer.Internal]:
         """
-        Retrieve a configurable random sample of peers from the database.
+        Retrieve a configurable random sample of peers from the database,
+        excluding those in the exclude_peers set.
 
-        Depending on the environment variable 'SHARE_PEERS', this method either returns
-        no peers, all peers, or a specified number of random peers.
+        Args:
+            exclude_peers (Set[Peer.Internal]): A set of Peer.Internal objects to exclude from the results.
+            filter_bad_peers (bool): Flag to filter out bad peers or not.
 
         Returns:
             List[Peer.Internal]: A list containing the requested number of peers.
         """
-        # TODO: consider a more direct database method so we don't have to call all, might be more efficient but might also not matter.
         all_peers = await PexMongo.get_all_peers()
-        raw_share_peers = os.getenv("SHARE_PEERS", "50") # Default set to 50.
+        # Assuming PexUtils.filter_bad_peers is a method that filters out peers based on certain criteria.
+        all_peers = (
+            await PexUtils.filter_bad_peers(all_peers) if filter_bad_peers else all_peers
+        )
+
+        # Create a set of IP addresses for the peers to be excluded.
+        exclude_ips = {peer.ip for peer in exclude_peers} if exclude_peers else set()
+
+        # Filter out the excluded peers based on their IP addresses.
+        filtered_peers = [peer for peer in all_peers if peer.ip not in exclude_ips]
+
+        raw_share_peers = os.getenv("SHARE_PEERS", "50")  # Default set to 50.
 
         match raw_share_peers:
             case "0":
                 return []
             case "-1":
-                return all_peers
+                return filtered_peers
             case _:
                 try:
                     share_count = int(raw_share_peers)
@@ -398,14 +418,17 @@ class PexMongo:
                     raise ValueError(
                         "Environment variable 'SHARE_PEERS' must be an integer"
                     )
-
                 if share_count < 0:
                     raise ValueError(
                         "'SHARE_PEERS' must be a non-negative integer or -1"
                     )
 
-                share_count = min(share_count, len(all_peers))
-                return random.sample(all_peers, share_count)
+                available_peer_count = min(share_count, len(filtered_peers))
+                return (
+                    random.sample(filtered_peers, available_peer_count)
+                    if available_peer_count > 0
+                    else []
+                )
 
     @staticmethod
     async def remove_peer(peer: Peer.Internal) -> bool:
