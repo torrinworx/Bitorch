@@ -46,3 +46,30 @@ async def inference(task_id: str, background_tasks: BackgroundTasks):
 
 Generally I want this endpoint to handle everything. Like status reporting back to the client/requesting peer, returning of results, security of result transmission, etc.
 """
+
+# Return peer_list when requested by other peers
+# TODO: Review and delete this? Might not be necissary now that /register sort of acts like an all in one endpoint for pex.
+
+import traceback
+
+from fastapi import APIRouter, HTTPException
+
+# from api.pex import PexMongo
+from utils.utils import Peer
+
+router = APIRouter()
+
+
+@router.get(
+    "/inference-request",
+    tags=["Distributed Inference"],
+    summary="TODO",
+    description="TODO",
+)
+async def inference_request_endpoint(peer: Peer.Public):
+    try:
+        # TODO: Check if peer is registered, if not, deny request.
+        return
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))

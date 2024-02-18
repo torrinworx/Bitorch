@@ -63,6 +63,7 @@ async def register_endpoint(peer: Peer.Public) -> Dict[str, Any]:
     try:
         # First step in any endpoint, convert public to private peer, might want to convert this into a middleware to automatically do this in the future somehow:
         peer_int = Peer.to_internal(peer)
+        peer_int.activated = True # .activated indicates that the peer has actually called the register endpoint and isn't just a random request.
         added = await PexMongo.add_peer(
             peer=copy.deepcopy(peer_int)
         )  # Need to deep copy here because mongo throws a fit, could be a better fix for this in pex.PexMongo
