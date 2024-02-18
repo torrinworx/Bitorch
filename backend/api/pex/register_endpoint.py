@@ -6,7 +6,7 @@ from typing import Dict, Any
 
 from fastapi import HTTPException
 
-from .pex import PexMongo
+from api.pex import PexMongo
 from utils.utils import Utils, Peer
 
 
@@ -65,7 +65,7 @@ async def register_endpoint(peer: Peer.Public) -> Dict[str, Any]:
         peer_int = Peer.to_internal(peer)
         added = await PexMongo.add_peer(
             peer=copy.deepcopy(peer_int)
-        )  # Need to deep copy here because mongo throws a fit, could be a better fix for this in .pex.PexMongo
+        )  # Need to deep copy here because mongo throws a fit, could be a better fix for this in pex.PexMongo
         if not added:
             raise HTTPException(status_code=400, detail="Peer already registered.")
 
