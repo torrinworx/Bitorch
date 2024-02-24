@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from utils.utils import Utils
+from utils import Utils
 from utils.tasks import StartupTasks
 from utils.scheduler import scheduler
 from middleware import setup_middlewares

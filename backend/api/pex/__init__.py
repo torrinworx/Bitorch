@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Set
 
 import httpx
 
-from utils.utils import Utils, Peer
+from utils import Utils, Peer
 from utils.scheduler import scheduler
 from utils.mongo import MongoDBManager
 

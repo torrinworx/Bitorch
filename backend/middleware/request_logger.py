@@ -5,7 +5,7 @@ from fastapi import Response, Request
 from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from utils.utils import Peer
+from utils import Peer
 from api.pex import PexMongo
 
 # TODO: Sanatize request info before logging to db

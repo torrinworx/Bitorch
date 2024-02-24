@@ -15,7 +15,7 @@ class ServerManager:
         self.backend_url = os.getenv("BACKEND_URL")
         self.exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-    def find_available_port(self, start_port):
+    def _find_available_port(self, start_port):
         port = start_port
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -35,6 +35,25 @@ class ServerManager:
         else:
             raise EnvironmentError(f"Unrecognized ENV value: {self.env}")
 
+    @staticmethod
+    def _parse_pipfile_for_packages(pipfile_path):
+        required_packages = set()
+        with open(pipfile_path, 'r') as f:
+            lines = f.readlines()
+            in_packages_section = False
+            for line in lines:
+                if line.strip() == "[packages]":
+                    in_packages_section = True
+                    continue
+                if in_packages_section:
+                    if line.strip() == "":
+                        break  # Empty line, end of packages section
+                    if "=" in line:
+                        # Assume that we have a package definition line
+                        package_name = line.split('=')[0].strip()
+                        required_packages.add(package_name.strip('"'))
+        return required_packages
+
     def _development_checks(self):
         print("> Operating in development mode. Initiating environment checks...")
 
@@ -44,9 +63,7 @@ class ServerManager:
         if "PIPENV_ACTIVE" not in os.environ:
             raise EnvironmentError("Script not running within a Pipenv shell.")
 
-        config = configparser.ConfigParser()
-        config.read("Pipfile")
-        required_packages = {pkg.strip('"') for pkg in config["packages"]}
+        required_packages = self._parse_pipfile_for_packages("Pipfile")
 
         for package in required_packages:
             try:
@@ -70,7 +87,7 @@ class ServerManager:
             host, port = parsed_url.hostname, parsed_url.port
             uvicorn.run("main:app", host=host, port=port, reload=True)
         else:
-            host, port = "0.0.0.0", self.find_available_port(self.default_port)
+            host, port = "0.0.0.0", self._find_available_port(self.default_port)
             uvicorn.run(app, host=host, port=port, reload=False)
 
 
