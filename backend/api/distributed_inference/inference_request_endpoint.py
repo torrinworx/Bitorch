@@ -61,11 +61,14 @@ NOTE: Need to purge all none essential env libraries so that the docker images a
 """
 
 import os
-from typing import List, Optional, Dict
+import queue
+import threading
 from pydantic import BaseModel, root_validator
+from typing import List, Optional, Dict, Iterator
 
 from gpt4all import GPT4All
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
 
 router = APIRouter()
@@ -76,6 +79,7 @@ class InferenceInput(BaseModel):
     chat_session: Optional[List[Dict[str, str]]] = None
     system_template: str = ""
     prompt_template: str = ""
+    stream: bool = False # Weather or not to stream back the request as it's generated
 
     @root_validator(pre=True)
     def check_prompt_or_chat_session(cls, values):
@@ -107,6 +111,7 @@ class InferenceInput(BaseModel):
                     ],
                     "system_template": "You are a knowledgeable assistant.",
                     "prompt_template": "### Human: \n{0}\n\n### Assistant:\n",
+                    "stream": False,
                 },
             ]
         }
@@ -126,54 +131,56 @@ async def inference_request_endpoint(inference_input: InferenceInput):
     TODO: Securly wrap the GPT4ALL.generate and .chat_session variables with thought about what the peer should control vs what the user should control
     TODO: security sanatization of all input data from user of endpoints.
     
+    
+    NOTE: Core aspect of this design is that the client, whatever it is, is expected to keep track of the chat_session, not the server. the server will only responde
+    with the response of the model, whether that be strings, images, audio, whatever.
     """
-    model_path = os.path.join("backend", "models")
+    model_path = os.path.join("models")
     os.makedirs(model_path, exist_ok=True)
 
     # Use the absolute path of the directory where your model should be located
     abs_model_path = os.path.abspath(model_path)
 
     model = GPT4All(
-        model_name="orca-mini-3b-gguf2-q4_0.gguf",  # https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/metadata/models2.json
+        model_name="mistral-7b-openorca.gguf2.Q4_0.gguf",  # https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/metadata/models2.json
         allow_download=True,
         model_path=abs_model_path,
+        verbose=True
     )
 
-    prompt = inference_input.prompt if not inference_input.chat_session else inference_input.chat_session[-1]
+    prompt = inference_input.prompt if not inference_input.chat_session else inference_input.chat_session[-1]["content"]
 
     with model.chat_session(system_prompt=inference_input.system_template, prompt_template=inference_input.prompt_template):
-        model.generate(prompt=prompt, temp=1.7, max_tokens=1000)
-        """
-        model.generate args we need to expose safely:
-        (method) def generate(
-            prompt: str,
-            max_tokens: int = 200,
-            temp: float = 0.7,
-            top_k: int = 40,
-            top_p: float = 0.4,
-            repeat_penalty: float = 1.18,
-            repeat_last_n: int = 64,
-            n_batch: int = 8,
-            n_predict: int | None = None,
-            streaming: bool = False,
-            callback: ResponseCallbackType = _pyllmodel.empty_response_callback
-        ) -> (str | Iterable[str])
-        Generate outputs from any GPT4All model.
+        if inference_input.chat_session:
+            model.current_chat_session.extend(inference_input.chat_session[:-1])
 
-        Args:
-            prompt: The prompt for the model the complete.
-            max_tokens: The maximum number of tokens to generate.
-            temp: The model temperature. Larger values increase creativity but decrease factuality.
-            top_k: Randomly sample from the top_k most likely tokens at each generation step. Set this to 1 for greedy decoding.
-            top_p: Randomly sample at each generation step from the top most likely tokens whose probabilities add up to top_p.
-            repeat_penalty: Penalize the model for repetition. Higher values result in less repetition.
-            repeat_last_n: How far in the models generation history to apply the repeat penalty.
-            n_batch: Number of prompt tokens processed in parallel. Larger values decrease latency but increase resource requirements.
-            n_predict: Equivalent to max_tokens, exists for backwards compatibility.
-            streaming: If True, this method will instead return a generator that yields tokens as the model generates them.
-            callback: A function with arguments token_id:int and response:str, which receives the tokens from the model as they are generated and stops the generation by returning False.
+        if inference_input.stream:  # replace with the actual condition
 
-        Returns:
-            Either the entire completion or a generator that yields the completion token by token.
-        """
-        return model.current_chat_session
+            # Queue to hold generated tokens
+            token_queue = queue.Queue()
+
+            def worker():
+                try:
+                    for token in model.generate(prompt, max_tokens=1000, streaming=True):
+                        print(token, end='', flush=True)  # Append to the same line and flush the output
+                        token_queue.put(token)  # Put the token in the queue
+                finally:
+                    print()  # Ensure the next console output appears on a new line
+                    token_queue.put(None)  # Put sentinel value to indicate end
+
+            # Start the worker in a separate thread
+            threading.Thread(target=worker, daemon=True).start()
+
+            # Generator function for StreamingResponse
+            def token_streamer() -> Iterator[str]:
+                # Fetch tokens from the queue
+                while True:
+                    token = token_queue.get()  # will block until a new item is available
+                    if token is None:
+                        break  # If we get sentinel value, exit
+                    yield token + "\n"  # Yield token to the client
+
+            # Return the streaming response
+            return StreamingResponse(token_streamer(), media_type="text/plain")
+        else:
+            return model.generate(prompt=prompt, max_tokens=1000, streaming=False)
