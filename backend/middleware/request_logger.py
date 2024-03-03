@@ -44,7 +44,7 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
         # Create a new request with the same scope and the original body
         # so that other parts of the application can still access the body
         request = Request(request.scope, receive=request._receive)
-        
+
         response = await call_next(request)
 
         res_body = b""
@@ -102,7 +102,8 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
             request_type=request.method,
             endpoint=str(request.url.path),
             query_params=query_params,
-            json_body=req_body,
+            req_body=req_body,
+            res_body=res_body,
             headers=sanitized_headers,
             response_code=str(response.status_code),
         )

@@ -257,6 +257,12 @@ class Peer:
         request_type: str
         endpoint: str
         response_code: str
+        query_params: Optional[Dict[str, str]] = Field(default=None)
+        req_body: Optional[Any] = Field(default=None)
+        res_body: Optional[Any] = Field(default=None)
+        headers: Optional[Dict[str, str]] = Field(default=None)
+
+    # TODO: Handle validation and sanatization, ensure that we save requests, but disregard malicous params, headers, or form data, and the request.
 
     T = TypeVar("T", bound=Union[Iterable[Any], Dict[str, Any]])
 
