@@ -23,7 +23,7 @@ services:
           ignore:
             - ./.venv
             - ./.env
-            - ./backend/models
+            - ./models
         - action: rebuild
           path: ./Pipfile
     ports:
@@ -54,7 +54,7 @@ services:
           ignore:
             - ./.venv
             - ./.env
-            - ./backend/models
+            - ./models
         - action: rebuild
           path: ./Pipfile
     ports:
