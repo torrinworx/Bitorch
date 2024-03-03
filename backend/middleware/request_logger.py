@@ -1,8 +1,10 @@
 import json
+import asyncio
 from datetime import datetime
 
 from starlette.types import ASGIApp
-from fastapi import Response, Request
+from fastapi import Request
+from fastapi.responses import StreamingResponse, Response
 from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -12,11 +14,28 @@ from api.pex import PexMongo
 # TODO: Sanatize request info before logging to db
 
 
+class ResponseBodyLogger:
+    def __init__(self, body_iterator, callback):
+        self._body_iterator = body_iterator
+        self._callback = callback
+        self._response_body_chunks = []
+
+    async def __aiter__(self):
+        async for chunk in self._body_iterator:
+            self._response_body_chunks.append(chunk)
+            yield chunk
+        await self._callback(b"".join(self._response_body_chunks))
+
+
 class RequestLoggerMiddleware(BaseHTTPMiddleware):
     """
     Middleware for logging request and response information using PexMongo for analytics and monitoring of peers
     on the network making requests.
     """
+    async def log_response_body(self, request, response, req_body):
+        async def callback(res_body):
+            await self.update_peer_history(request, response, req_body, res_body.decode('utf-8'))
+        return callback
 
     async def dispatch(self, request: Request, call_next) -> ASGIApp:
         """
@@ -47,25 +66,35 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        res_body = b""
-        async for chunk in response.body_iterator:
-            res_body += chunk
+        if isinstance(response, StreamingResponse):
+            print("THIS IS A STREAMED RESPONSE")
+            # Wrap the body_iterator of the response for streaming responses
+            response.body_iterator = ResponseBodyLogger(
+                response.body_iterator,
+                await self.log_response_body(request, response, req_body),
+            )
+            return response
+        else:
+            print("NOT A STREAMED RESPONSE")
+            res_body = b""
+            async for chunk in response.body_iterator:
+                res_body += chunk
 
-        task = BackgroundTask(
-            self.update_peer_history,
-            request,
-            response,
-            req_body,
-            res_body
-        )
+            task = BackgroundTask(
+                self.update_peer_history,
+                request,
+                response,
+                req_body,
+                res_body
+            )
 
-        return Response(
-            content=res_body,
-            status_code=response.status_code,
-            headers=dict(response.headers),
-            media_type=response.media_type,
-            background=task,
-        )
+            return Response(
+                content=res_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+                background=task,
+            )
 
     @staticmethod
     async def update_peer_history(request, response, req_body, res_body):
