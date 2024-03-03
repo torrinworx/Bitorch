@@ -45,31 +45,52 @@ async def inference(task_id: str, background_tasks: BackgroundTasks):
 ```
 
 Generally I want this endpoint to handle everything. Like status reporting back to the client/requesting peer, returning of results, security of result transmission, etc.
+
+Right now there are two potential packages we can use for the initial test of running the entire model on a single peer since chunking and distributing the model like petals is a bit more complex:
+- https://llm.datasette.io/en/stable/python-api.html - pypi llm package
+- https://docs.gpt4all.io/gpt4all_python.html - gpt4all python package
+
+llm uses gpt4all under the hood so we should probably just use gpt4all directly so that we don't have to bloat the library. Ideally though, we would at somepoint in the future develop our own
+in house alternative of gpt4all package/model running capabilities so that we don't have to get locked in to this library.
+
+I've tried ollama but don't like it because it requires you to deploy a server locally which I don't want in this case because this is supposed to be the server running the llms.
+
+gpt4all seems to be a self contained python library that just runs binaries which should be more python based I guess, also ollama is written in go which is yuck for what I want here.
+
+NOTE: Need to purge all none essential env libraries so that the docker images are lighter.
 """
 
-# Return peer_list when requested by other peers
-# TODO: Review and delete this? Might not be necissary now that /register sort of acts like an all in one endpoint for pex.
+import os
+from pydantic import BaseModel
 
-import traceback
+from gpt4all import GPT4All
+from fastapi import APIRouter
 
-from fastapi import APIRouter, HTTPException
-
-# from api.pex import PexMongo
-from utils.utils import Peer
 
 router = APIRouter()
 
 
-@router.get(
+class InferenceInput(BaseModel):
+    text_input: str
+
+
+@router.post(
     "/inference-request",
     tags=["Distributed Inference"],
-    summary="TODO",
-    description="TODO",
+    summary="Generates text based on the input prompt using Mistral model.",
+    description="This endpoint receives a text input and returns a generated text response from the Mistral-7B-v0.1 model.",
 )
-async def inference_request_endpoint(peer: Peer.Public):
-    try:
-        # TODO: Check if peer is registered, if not, deny request.
-        return
-    except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+async def inference_request_endpoint(inference_input: InferenceInput):
+    model_path = os.path.join("backend", "models")
+    os.makedirs(model_path, exist_ok=True)
+
+    # Use the absolute path of the directory where your model should be located
+    abs_model_path = os.path.abspath(model_path)
+
+    model = GPT4All(
+        model_name="orca-mini-3b-gguf2-q4_0.gguf",  # https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/metadata/models2.json
+        allow_download=True,
+        model_path=abs_model_path,
+    )
+    response = model.generate(inference_input.text_input, max_tokens=2000)
+    return response

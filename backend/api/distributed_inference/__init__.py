@@ -47,7 +47,7 @@ class Data:
 
 class ModelDispatcher:
     """
-    This class is designed to take in an InferenceRequest, search the available models on the server, review if they are present, then run the model given the input data and returns the output to ther Inference requestor.
+    This class is designed to take in an InferenceRequest, search the available models on the server, review if they are present, then run the model given the input data and returns the output to the inference requestor.
     """
 
     # TODO: Somehow figure out a way to take in the inference request, map it to the model, and map the data sent by the inference-request to the model running in the huggingface library dynamically so that we don't
@@ -70,7 +70,7 @@ class InferenceRequest:
     For a model like Whisper, input_data would consist of Data.AudioData, and output_data would be Data.TextData.
     """
     input_data = Union[Data.TextData, Data.ImageData, Data.AudioData]
-    model_params = Dict[Any]
+    model_params = Dict[str, Any]
     output_data = Union[
         Data.TextData, Data.ImageData, Data.AudioData
     ]  # Optional until the result is processed and returned, otherwise request fails I guess?

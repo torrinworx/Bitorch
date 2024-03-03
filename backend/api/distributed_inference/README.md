@@ -7,6 +7,9 @@ This section primarily contains information and research, mostly links, about di
 - [DeepSpeed: Accelerating large-scale model inference and training via system optimizations and compression](https://www.microsoft.com/en-us/research/blog/deepspeed-accelerating-large-scale-model-inference-and-training-via-system-optimizations-and-compression/)
 - [petals model configuration/blocking/partitoning](https://github.com/bigscience-workshop/petals/tree/mixtral/src/petals/models)
 - [Handling big models for inference](https://huggingface.co/docs/accelerate/usage_guides/big_modeling)
+- https://github.com/huggingface/blog/blob/main/accelerate-large-models.md
+- https://arxiv.org/pdf/2209.01188.pdf
+- https://huggingface.co/docs/accelerate/usage_guides/big_modeling
 
 
 Generally there are two approaches:
