@@ -15,6 +15,7 @@ python-multipart = "*"
 apscheduler = {extras = ["mongoengine"], version = "*"}
 motor = "*"
 exceptiongroup = "*"
+gradio = "*"
 
 [dev-packages]
 
