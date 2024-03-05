@@ -52,7 +52,7 @@ class PexTasks:
         peers = Utils.get_source_peers()
         await PexMethods.register(peers=peers)
 
-    @scheduler.schedule_task(trigger="interval", seconds=10, id="peer_list_monitor")
+    # @scheduler.schedule_task(trigger="interval", seconds=10, id="peer_list_monitor")
     @staticmethod
     async def peer_list_monitor():
         """

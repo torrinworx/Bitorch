@@ -63,7 +63,7 @@ NOTE: Need to purge all none essential env libraries so that the docker images a
 import os
 import queue
 import threading
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Iterator
 
 from gpt4all import GPT4All
@@ -75,46 +75,62 @@ router = APIRouter()
 
 
 class InferenceInput(BaseModel):
-    prompt: Optional[str] = None
-    chat_session: Optional[List[Dict[str, str]]] = None
-    system_template: str = ""
-    prompt_template: str = ""
+    messages: Optional[List[Dict[str, str]]]
     stream: bool = False # Weather or not to stream back the request as it's generated
-
-    @root_validator(pre=True)
-    def check_prompt_or_chat_session(cls, values):
-        prompt, chat_session = values.get("prompt"), values.get("chat_session")
-        if (prompt is None and chat_session is None) or (prompt and chat_session):
-            raise ValueError(
-                "You must provide either a prompt or a chat session, not both."
-            )
-        return values
 
     class Config:
         schema_extra = {
             "examples": [
                 {
-                    # Assuming no chat session is provided if prompt is used
-                    "prompt": "What is the capital of France?",
-                    # Assuming no prompt is provided if chat_session is used
-                    "chat_session": [
+                    "messages": [
                         {
                             "role": "system",
                             "content": "You are an AI assistant that follows instruction extremely well. Help as much as you can.",
                         },
-                        {"role": "user", "content": "what's up dude?"},
+                        {
+                            "role": "user",
+                            "content": "what's up dude?"
+                        },
                         {
                             "role": "assistant",
                             "content": "I'm doing great, thank you for asking! How about you?",
                         },
-                        {"role": "user", "content": "What is the speed of light?"},
+                        {
+                            "role": "user",
+                            "content": "What is the speed of light?"
+                        },
                     ],
-                    "system_template": "You are a knowledgeable assistant.",
-                    "prompt_template": "### Human: \n{0}\n\n### Assistant:\n",
                     "stream": False,
                 },
             ]
         }
+
+
+def format_prompt_for_llm(prompt_list):
+    """
+    Takes a list of conversation entries and formats them as a single string prompt.
+
+    :param prompt_list: A list of dictionaries with 'role' and 'content' keys.
+    :return: A formatted string prompt.
+    """
+    formatted_prompt = ""
+
+    # Mapping from your roles to the required prompt labels
+    role_to_label = {
+        "system": "### System:",
+        "user": "### Human:",
+        "assistant": "### Assistant:",
+    }
+
+    for entry in prompt_list:
+        role_label = role_to_label.get(entry["role"], "")
+        if role_label:
+            formatted_prompt += f"{role_label}\n{entry['content']}\n\n"
+
+    # We always expect the assistant's reply at the end, hence the final "### Assistant:"
+    formatted_prompt += "### Assistant:\n"
+
+    return formatted_prompt
 
 
 @router.post(
@@ -130,7 +146,6 @@ async def inference_request_endpoint(inference_input: InferenceInput):
     TODO: All peer to select which models it wants to host and allow endpoint user to select model to run based on hosted models
     TODO: Securly wrap the GPT4ALL.generate and .chat_session variables with thought about what the peer should control vs what the user should control
     TODO: security sanatization of all input data from user of endpoints.
-    
     
     NOTE: Core aspect of this design is that the client, whatever it is, is expected to keep track of the chat_session, not the server. the server will only responde
     with the response of the model, whether that be strings, images, audio, whatever.
@@ -148,39 +163,38 @@ async def inference_request_endpoint(inference_input: InferenceInput):
         verbose=True
     )
 
-    prompt = inference_input.prompt if not inference_input.chat_session else inference_input.chat_session[-1]["content"]
+    prompt = format_prompt_for_llm(prompt_list=inference_input.messages)
+    
+    if inference_input.stream:
+        # Queue to hold generated tokens
+        token_queue = queue.Queue()
 
-    with model.chat_session(system_prompt=inference_input.system_template, prompt_template=inference_input.prompt_template):
-        if inference_input.chat_session:
-            model.current_chat_session.extend(inference_input.chat_session[:-1])
+        def worker():
+            try:
+                for token in model.generate(
+                    prompt=prompt, max_tokens=1000, streaming=True
+                ):
+                    # print(token, end='', flush=True)  # Append to the same line and flush the output
+                    token_queue.put(token)  # Put the token in the queue
+            finally:
+                # print()  # Ensure the next console output appears on a new line
+                token_queue.put(None)  # Put sentinel value to indicate end
 
-        if inference_input.stream:  # replace with the actual condition
+        # Start the worker in a separate thread
+        threading.Thread(target=worker, daemon=True).start()
 
-            # Queue to hold generated tokens
-            token_queue = queue.Queue()
+        # Generator function for StreamingResponse
+        def token_streamer() -> Iterator[str]:
+            # Fetch tokens from the queue
+            while True:
+                token = (
+                    token_queue.get()
+                )  # will block until a new item is available
+                if token is None:
+                    break  # If we get sentinel value, exit
+                yield token + "\n"  # Yield token to the client
 
-            def worker():
-                try:
-                    for token in model.generate(prompt, max_tokens=1000, streaming=True):
-                        print(token, end='', flush=True)  # Append to the same line and flush the output
-                        token_queue.put(token)  # Put the token in the queue
-                finally:
-                    print()  # Ensure the next console output appears on a new line
-                    token_queue.put(None)  # Put sentinel value to indicate end
-
-            # Start the worker in a separate thread
-            threading.Thread(target=worker, daemon=True).start()
-
-            # Generator function for StreamingResponse
-            def token_streamer() -> Iterator[str]:
-                # Fetch tokens from the queue
-                while True:
-                    token = token_queue.get()  # will block until a new item is available
-                    if token is None:
-                        break  # If we get sentinel value, exit
-                    yield token + "\n"  # Yield token to the client
-
-            # Return the streaming response
-            return StreamingResponse(token_streamer(), media_type="text/plain")
-        else:
-            return model.generate(prompt=prompt, max_tokens=1000, streaming=False)
+        # Return the streaming response
+        return StreamingResponse(token_streamer(), media_type="text/plain")
+    else:
+        return model.generate(prompt=prompt, max_tokens=1000, streaming=False)
