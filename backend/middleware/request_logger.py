@@ -1,11 +1,8 @@
 import json
-import asyncio
 from datetime import datetime
 
 from starlette.types import ASGIApp
 from fastapi import Request
-from fastapi.responses import StreamingResponse, Response
-from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from utils import Peer
@@ -48,53 +45,27 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
         Returns:
         - ASGIApp: The ASGI application response.
         """
-
-        body_bytes = await request.body()  # read the body here
-
-        # You can access the request body here
+        # Read request body:
+        body_bytes = await request.body()
         req_body = body_bytes.decode('utf-8')
+
         # If the body is JSON, you can convert it to a dict
         try:
             req_body = json.loads(req_body)
         except json.JSONDecodeError:
-            # The body is not JSON, handle according to your application's needs
             req_body = None
 
         # Create a new request with the same scope and the original body
         # so that other parts of the application can still access the body
         request = Request(request.scope, receive=request._receive)
-
         response = await call_next(request)
 
-        if isinstance(response, StreamingResponse):
-            print("THIS IS A STREAMED RESPONSE")
-            # Wrap the body_iterator of the response for streaming responses
-            response.body_iterator = ResponseBodyLogger(
-                response.body_iterator,
-                await self.log_response_body(request, response, req_body),
-            )
-            return response
-        else:
-            print("NOT A STREAMED RESPONSE")
-            res_body = b""
-            async for chunk in response.body_iterator:
-                res_body += chunk
-
-            task = BackgroundTask(
-                self.update_peer_history,
-                request,
-                response,
-                req_body,
-                res_body
-            )
-
-            return Response(
-                content=res_body,
-                status_code=response.status_code,
-                headers=dict(response.headers),
-                media_type=response.media_type,
-                background=task,
-            )
+        # Wrap the body_iterator of the response for streaming responses
+        response.body_iterator = ResponseBodyLogger(
+            response.body_iterator,
+            await self.log_response_body(request, response, req_body),
+        )
+        return response
 
     @staticmethod
     async def update_peer_history(request, response, req_body, res_body):

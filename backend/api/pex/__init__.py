@@ -79,6 +79,12 @@ class PexTasks:
         TODO: Ensure that this thing runs every 10 seconds/## interval whenever this
         function actually finished so that peers don't double check eachother in a short
         time period.
+        
+        TODO: Introduce some data clean up to keep mongodb size small, remove request body
+        and other large chunks of data from the request history if the request is older 
+        than a certain time. but keep the bare bones logs so that we still have a record.
+        This will preserve space in the db, might not be necissary if the size is minimal,
+        but it might add up with multiple peers and lots of requests coming in so idk.
         """
         my_peer_list = await PexMongo.get_all_peers()
         current_time = datetime.now()
