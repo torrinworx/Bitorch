@@ -6,8 +6,8 @@ from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
 
-from api.pex import PexMongo
-from utils import Peer
+from ...api.pex import PexMongo
+from ...utils import Peer
 
 router = APIRouter()
 

@@ -20,9 +20,7 @@ class Utils:
     @staticmethod
     def load_config():
         # Path to the config file
-        config_file = os.path.join(
-            os.path.dirname(os.path.abspath(sys.argv[0])), ".", ".config.json"
-        )
+        config_file = os.path.abspath(".config.json")
 
         # Check if the config file exists
         if not os.path.exists(config_file):

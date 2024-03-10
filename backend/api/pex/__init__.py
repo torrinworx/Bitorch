@@ -7,9 +7,9 @@ from typing import List, Tuple, Optional, Set
 
 import httpx
 
-from utils import Utils, Peer
-from utils.scheduler import scheduler
-from utils.mongo import MongoDBManager
+from ...utils import Utils, Peer
+from ...utils.scheduler import scheduler
+from ...utils.mongo import MongoDBManager
 
 
 peers_collection = "peers"

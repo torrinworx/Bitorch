@@ -1,4 +1,4 @@
-from api.pex import PexTasks
+from ..api.pex import PexTasks
 
 
 class StartupTasks:

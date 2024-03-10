@@ -1,12 +1,12 @@
 import json
 from datetime import datetime
 
-from starlette.types import ASGIApp
 from fastapi import Request
+from starlette.types import ASGIApp
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from utils import Peer
-from api.pex import PexMongo
+from backend.utils import Peer
+from backend.api.pex import PexMongo
 
 # TODO: Sanatize request info before logging to db
 

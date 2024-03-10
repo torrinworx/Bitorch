@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from utils import Utils
-from utils.tasks import StartupTasks
-from utils.scheduler import scheduler
-from middleware import setup_middlewares
+from .utils import Utils
+from .utils.tasks import StartupTasks
+from .utils.scheduler import scheduler
+from .middleware import setup_middlewares
 from backend.api import router as api_router
 
 load_dotenv()
@@ -16,7 +16,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
-    from utils.mongo import MongoDBManager
+    from .utils.mongo import MongoDBManager
 
     if Utils.env == "development":
         result = await MongoDBManager().test()
