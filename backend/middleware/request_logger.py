@@ -29,9 +29,21 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
     Middleware for logging request and response information using PexMongo for analytics and monitoring of peers
     on the network making requests.
     """
+
     async def log_response_body(self, request, response, req_body):
         async def callback(res_body):
-            await self.update_peer_history(request, response, req_body, res_body.decode('utf-8'))
+            content_type = response.headers.get("content-type", "")
+            if content_type.startswith("text") or content_type == "application/json":
+                try:
+                    decoded_body = res_body.decode("utf-8")
+                except UnicodeDecodeError as e:
+                    decoded_body = f"<Error decoding response body: {e}>"
+            else:
+                # For binary content types, just show a place holder value as we don't want to store that in the db.
+                decoded_body = "<Binary content not shown>"
+
+            await self.update_peer_history(request, response, req_body, decoded_body)
+
         return callback
 
     async def dispatch(self, request: Request, call_next) -> ASGIApp:
@@ -47,13 +59,17 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
         """
         # Read request body:
         body_bytes = await request.body()
-        req_body = body_bytes.decode('utf-8')
 
-        # If the body is JSON, you can convert it to a dict
+        # Attempt to decode as utf-8, but fallback to raw bytes if decoding fails
         try:
-            req_body = json.loads(req_body)
-        except json.JSONDecodeError:
-            req_body = None
+            req_body = body_bytes.decode('utf-8')
+            # If the body is JSON, convert it to a dict
+            try:
+                req_body = json.loads(req_body)
+            except json.JSONDecodeError:
+                pass  # If not JSON, leave as decoded string
+        except UnicodeDecodeError:
+            req_body = "<Binary content not shown>"
 
         # Create a new request with the same scope and the original body
         # so that other parts of the application can still access the body

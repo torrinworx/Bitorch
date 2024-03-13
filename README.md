@@ -4,8 +4,8 @@
   <img src="https://github.com/torrinworx/Bitorch/assets/82110564/1e49cbec-44c7-4b61-b186-b5f1715c5283" alt="Bitorch_flame">
 </p>
 
-# Disclaimer:
-This readme consists of a bunch of random ramblings and ideas I had at early hours of the morning without much sleep, some are good, some are poorly articulated and not very well thought out, this document is to remind me of some of the ideas I have for this project, and is by no means a finished plan. Ideally I would like to create an official plan/paper about this project and its execution. I would like to get a working prototype functioning before then so I know what I can build and build off of it and hopefully build a community to help out with this project. Anyway please enjoy my sleep deprived notes.
+> [!CAUTION]
+> This project is still in very early stages of development. It is not ready for production use.
 
 A plan for building a distributed system to run AI models BitTorrent style with a secure compensation mechanism.
 

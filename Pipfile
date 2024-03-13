@@ -3,6 +3,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu118"
+verify_ssl = false
+
 [packages]
 uvicorn = "*"
 fastapi = "*"
@@ -16,6 +21,10 @@ apscheduler = {extras = ["mongoengine"], version = "*"}
 motor = "*"
 exceptiongroup = "*"
 gradio = "*"
+diffusers = "*"
+transformers = "*"
+accelerate = "*"
+torch = {index = "pytorch", version = "*"}
 
 [dev-packages]
 

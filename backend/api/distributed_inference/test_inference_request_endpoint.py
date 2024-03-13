@@ -74,6 +74,13 @@ from fastapi.responses import StreamingResponse
 router = APIRouter()
 
 
+# TODO: Handle logic and user specifications about which models are loaded and hosted in memory vs booted per request.
+model_path = os.path.join("models")
+os.makedirs(model_path, exist_ok=True)
+
+# Use the absolute path of the directory where your model should be located
+abs_model_path = os.path.abspath(model_path)
+
 class InferenceInput(BaseModel):
     messages: Optional[List[Dict[str, str]]]
     stream: bool = False # Weather or not to stream back the request as it's generated
@@ -150,21 +157,15 @@ async def inference_request_endpoint(inference_input: InferenceInput):
     NOTE: Core aspect of this design is that the client, whatever it is, is expected to keep track of the chat_session, not the server. the server will only responde
     with the response of the model, whether that be strings, images, audio, whatever.
     """
-    model_path = os.path.join("models")
-    os.makedirs(model_path, exist_ok=True)
-
-    # Use the absolute path of the directory where your model should be located
-    abs_model_path = os.path.abspath(model_path)
-
     model = GPT4All(
-        model_name="mistral-7b-openorca.gguf2.Q4_0.gguf",  # https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/metadata/models2.json
+        model_name="mistral-7b-openorca.gguf2.Q4_0.gguf",  # compatible models: https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/metadata/models2.json
         allow_download=True,
         model_path=abs_model_path,
-        verbose=True
+        verbose=True,
     )
 
     prompt = format_prompt_for_llm(prompt_list=inference_input.messages)
-    
+
     if inference_input.stream:
         # Queue to hold generated tokens
         token_queue = queue.Queue()
