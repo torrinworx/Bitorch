@@ -118,20 +118,8 @@ Crucial in maintaining the trustworthiness and reliability of the distributed AI
 This custom consensus mechanism is tailored to Bitorch's values of fairness, decentralization, and efficiency. By integrating various contribution and performance aspects, it aims to foster a balanced environment that rewards meaningful participation and maintains network trust.
 
 
-If you are excited about the potential of distributed AI and interested in contributing to the Bitorch project, we would love to hear from you. For collaboration inquiries or to discuss how we can work together to bring this vision to life, please contact Torrin Leonard at [torrinleonard.com/contact](https://www.torrinleonard.com/contact).
-
-Together, we can build a future where advanced AI is accessible, secure, and beneficial for all.
-
-
 ## Moving forward
 Build out three systems to demo proof of concepts and to setup a testing environment the point of these projects are sort of first steps and proof of concepts to get down the test deployments and the first initial core components setup, not fully but just the fundamental tech will be there after we build these out.
 
 1. bit torrent python fastapi docker network, automatically deploy 4 docker containers running the fastapi server, 1 seeder, 3 leechers, so that it can run an automatic test proof of concept of a bit torrent distribution seeding + leeching an ai model like llama or something.
 2. 
-
-# Temp bug with docker compose watch:
-
-You'll have to delete the file generated in `C:\Users\<username>\AppData\Local\docker-compose` to prevent an issue with docker version 24.0.7: https://github.com/docker/compose/issues/11066
-
-
-For consensus or security measures, we could seed the model output to all servers running the models, randomely for normal output/generation, then when we do a sort of security audit or legitimacy audit, we could generate out a static seed to test on mutliple nodes running the model, that way we can verify if the output of a given layer is legitimate if it differentiates from a another nodes output running the same model.
