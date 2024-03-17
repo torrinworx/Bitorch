@@ -49,7 +49,8 @@ Bitorch has four important main components:
 3. **Model Distribution** allows for new peers to join the network and easily pull chunks or entier models to host and run without the need for external model hosting services.
 4. **Compensation Mechanism** ensentivises peers to join the public network to host and run models and be fairly compensated for their contribution to the network.
 
-These four components 
+These four components represent the fundamental foundational code of Bitorch and it's ethics. 
+
 > They say, "Jump" And ya say, "How high?"
 
 *-- Rage Against the Machine*
