@@ -20,7 +20,6 @@ async def app_lifespan(app: FastAPI):
 
     if Utils.env == "development":
         result = await MongoDBManager().test()
-        print("INFO: Mongo test", "passed" if result else "failed")
 
     await StartupTasks.run()
     scheduler.run()
