@@ -47,7 +47,7 @@ class PexTasks:
         """
         my_peer = await Utils.get_my_peer()
         if Utils.env == "development" and my_peer.name == "peer0":
-            return  # No registration needed because we are the source peer
+            return  # No registration needed because we are a source peer
 
         peers = Utils.get_source_peers()
         await PexMethods.register(peers=peers)

@@ -16,8 +16,8 @@ RUN apt-get update && \
 ### Bitorch Setup ###
 COPY ./ /Bitorch/
 
+EXPOSE 8000
+
 # Install Pipenv
 RUN pip install --no-cache-dir pipenv && \
     pipenv install
-
-EXPOSE 8000

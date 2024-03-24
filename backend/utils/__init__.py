@@ -151,7 +151,7 @@ class Peer:
                 if isinstance(ip_obj, (IPv4Address, IPv6Address)) and ip_obj.is_private:
                     raise ValueError("IP address must be public in production")
             except ValueError as e:
-                raise ValueError(f"Invalid IP address format: {e}")
+                raise ValueError(f"Invalid IP address format: {v}\n{e}")
             return v
 
         @validator("port")

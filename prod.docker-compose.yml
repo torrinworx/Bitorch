@@ -14,7 +14,7 @@ services:
     command: /bin/sh -c "env && pipenv run python run.py"
     build:
       context: .
-      dockerfile: dev.dockerfile
+      dockerfile: dockerfile
     ports:
       - "8000:8000"
     env_file:
