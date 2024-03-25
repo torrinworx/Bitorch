@@ -21,14 +21,7 @@ class PexTasks:
     async def startup():
         """
         Initialize startup tasks for the peer-to-peer network.
-
-        This function is responsible for establishing initial peer connections.
-        It checks if the current peer list is empty and, if so, searches for
-        additional peers to connect to for starting network activities.
         """
-        # Add self to peer list:
-        my_peer = await Utils.get_my_peer()
-        await PexMongo.add_peer(peer=my_peer)
 
         await PexTasks.join_network()
 
@@ -50,9 +43,10 @@ class PexTasks:
             return  # No registration needed because we are a source peer
 
         peers = Utils.get_source_peers()
+        print(peers)
         await PexMethods.register(peers=peers)
 
-    # @scheduler.schedule_task(trigger="interval", seconds=10, id="peer_list_monitor")
+    @scheduler.schedule_task(trigger="interval", seconds=10, id="peer_list_monitor")
     @staticmethod
     async def peer_list_monitor():
         """
@@ -94,11 +88,10 @@ class PexTasks:
             peer_last_seen = datetime.fromisoformat(peer.last_seen)
             if ten_minutes_ago > peer_last_seen:
                 # # Perform health check
-                # alive = await PexMethods.health_check(peer)
-                # if not alive:
-                #     # Handle marking the peer as inactive in the database
-                pass
-
+                alive = await PexMethods.health_check(peer)
+                if not alive:
+                    # Handle marking the peer as inactive in the database
+                    pass
             elif five_minutes_ago < peer_last_seen < ten_minutes_ago:
                 # Attempt to re-register peer to verify if it is still active
                 await PexMethods.register([peer])
@@ -196,21 +189,41 @@ class PexMethods:
         """
         pass
 
-    # TODO:
     @staticmethod
-    async def health_check():
+    async def health_check(peer: Peer.Internal) -> bool:
         """
-        Sends health checks to a list of peers in the network.
+        Performs a health check on the specified peer.
 
-        This function is scheduled to run periodically. It sends health check
-        messages to other peers to ensure network integrity and the availability
-        of peers.
+        This method sends a GET request to the peer's health check endpoint. If the peer
+        responds with a status code of 200 and a body that contains 'status': 'OK', it
+        is considered healthy. Otherwise, the peer is considered unhealthy.
 
-        TODO: Implement an algorithm to checkup on peers in the peer_list that haven't
-        been communicated with in a while to check if they are alive. Remove if no
-        response.
+        Args:
+            peer (Peer.Internal): The peer to perform the health check on.
+
+        Returns:
+            bool: True if the peer is healthy, False otherwise.
         """
-        pass
+        try:
+            # Construct the URL for the health check endpoint of the peer
+            health_check_url = f"http://{peer.ip}:{peer.port}/health_check"
+
+            # Execute the GET request with a short timeout as this is a simple health check
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(health_check_url)
+
+                # Check if the response contains the expected 'status': 'OK'
+                return (
+                    response.status_code == 200
+                    and response.json().get("status") == "OK"
+                )
+
+        except (httpx.HTTPError, httpx.RequestError):
+            # Explicitly catch network-related errors and not use a broad "Exception"
+            # This includes connection errors or server response errors (4xx, 5xx status codes)
+            pass
+
+        return False
 
 
 class PexUtils:
